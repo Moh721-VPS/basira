@@ -1,3 +1,6 @@
 name = "basira-api"
 main = "src/index.ts"
 compatibility_date = "2026-10-04"
+
+[vars]
+MOCK_MODE = "true"
