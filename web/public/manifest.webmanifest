@@ -1,0 +1,8 @@
+{
+  "id": "/", "name": "Basira | بصيرة", "short_name": "Basira",
+  "description": "Claim-verification scaffold — IslamicAIch Track 04",
+  "start_url": "/", "scope": "/", "display": "standalone",
+  "background_color": "#f8fafc", "theme_color": "#065f46",
+  "lang": "ar", "dir": "rtl",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

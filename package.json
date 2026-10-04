@@ -1,0 +1,12 @@
+{
+  "name": "basira",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --dir web dev",
+    "dev:api": "pnpm --dir api dev",
+    "build": "pnpm --dir web build && pnpm --dir api build",
+    "test": "pnpm --dir api test"
+  },
+  "engines": { "node": ">=22.12.0" },
+  "packageManager": "pnpm@11.25.0"
+}

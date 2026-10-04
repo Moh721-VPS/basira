@@ -1,0 +1,8 @@
+packages:
+  - web
+  - api
+allowBuilds:
+  esbuild: true
+  workerd: true
+minimumReleaseAgeExclude:
+  - '@cloudflare/workers-types@5.20261004.1'
