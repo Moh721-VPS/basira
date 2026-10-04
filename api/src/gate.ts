@@ -1,0 +1,11 @@
+import type { IdentifiedEvidence, ClaimResult, Lang } from './types';
+import type { Verdict } from './verify';
+export const notes = {
+  en: { supported: 'Retrieved evidence directly supports the complete claim.', insufficient: 'Retrieved evidence does not directly support every part of this claim.', referral: 'Please consult a qualified specialist for this personal ruling or juristic interpretation.', error: 'Verification could not be completed because a service failed. Please try again.' },
+  ar: { supported: 'تدعم الأدلة المسترجعة جميع أجزاء الادعاء مباشرة.', insufficient: 'لا تدعم الأدلة المسترجعة جميع أجزاء الادعاء مباشرة.', referral: 'يرجى الرجوع إلى مختص مؤهل لهذا الحكم الشخصي أو التفسير الفقهي.', error: 'تعذر إكمال التحقق بسبب فشل خدمة. يرجى المحاولة مرة أخرى.' },
+};
+export function gate(id: string, text: string, evidence: IdentifiedEvidence[], result: Verdict, lang: Lang): ClaimResult {
+  const supported = result.verdict === 'entails' && result.evidenceIds.length > 0 && result.missing.length === 0 && result.evidenceIds.every(evidenceId => evidence.some(item => item.id === evidenceId));
+  const selected = supported ? evidence.filter(item => result.evidenceIds.includes(item.id)) : evidence;
+  return { id, text, status: supported ? 'SUPPORTED' : 'NEEDS_MORE_VERIFICATION', evidence: selected.map(({ id, title, url, snippet, source }) => ({ id, title: `${source}: ${title}`, url, snippet })), note: supported ? notes[lang].supported : notes[lang].insufficient };
+}

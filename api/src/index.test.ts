@@ -4,7 +4,7 @@ import worker from './index';
 
 const request = (body: string) => new Request('https://basira.test/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
 test('valid input returns the mock contract and never claims support', async () => {
-  const response = await worker.fetch(request(JSON.stringify({ text: 'Example claim' })));
+  const response = await worker.fetch(request(JSON.stringify({ text: 'Example claim', lang: 'en' })), { MOCK_MODE: 'true' });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { claims: [{ id: 'C1', text: 'Example claim', status: 'NEEDS_MORE_VERIFICATION', evidence: [{ id: 'E1', title: 'Mock evidence — example only', url: 'https://example.com/', snippet: 'Placeholder evidence. This does not support or refute the submitted text.' }], note: 'MOCK DATA: no verification was performed. بيانات تجريبية: لم يُجرَ أي تحقق.' }] });
 });
@@ -28,5 +28,7 @@ test('system failure is an HTTP error, never a claim status', async () => {
   broken.json = async <T>() => ({ get text() { throw new Error('Simulated failure'); } }) as T;
   const response = await worker.fetch(broken);
   assert.equal(response.status, 500);
-  assert.deepEqual(await response.json(), { error: 'SYSTEM_ERROR' });
+  const data = await response.json() as { claims: { status: string; evidence: unknown[] }[] };
+  assert.equal(data.claims[0].status, 'SYSTEM_ERROR');
+  assert.deepEqual(data.claims[0].evidence, []);
 });

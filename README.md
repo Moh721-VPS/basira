@@ -1,8 +1,8 @@
 # Basira (بصيرة)
 
-Claim-verification web app scaffold for the IslamicAIch challenge, Track 04.
+Claim-verification web app for the IslamicAIch challenge, Track 04.
 
-**Task 1 only:** the API returns visibly marked mock data. It does not split claims, retrieve evidence, call Gemini, verify Islamic content, or provide fatwas/personal rulings.
+Task 2 adds evidence retrieval and Gemini entailment checks. Basira does not answer from model memory or provide fatwas/personal rulings. Mock mode remains enabled by default so the app runs without credentials.
 
 ## Requirements and local setup
 
@@ -28,7 +28,28 @@ Run the web app in terminal 2:
 pnpm dev:web
 ```
 
-Open http://127.0.0.1:5173. Vite proxies `/api` to the Worker at http://127.0.0.1:8787. Switch between Arabic RTL and English LTR in the header. Enter text and select Verify to see the mock response.
+Open http://127.0.0.1:5173. Vite proxies `/api` to the Worker at http://127.0.0.1:8787. Switch between Arabic RTL and English LTR in the header. Enter text and select Verify. Mock responses remain visibly labelled.
+
+## Enable real verification
+
+Create the ignored file `api/.dev.vars` locally with these three variables (supply your own key):
+
+```dotenv
+GEMINI_API_KEY=your-key-here
+GEMINI_MODEL=gemini-3.8-flash
+MOCK_MODE=false
+```
+
+Restart the Worker after changing configuration. `GEMINI_MODEL` has no runtime default. As checked on 2026-10-04, Google lists `gemini-3.8-flash` as its current stable Flash model with free-tier input/output tokens: [models](https://ai.google.dev/gemini-api/docs/models), [pricing](https://ai.google.dev/gemini-api/docs/pricing). Availability and quotas depend on the Google project. Missing configuration or an API quota/error produces SYSTEM_ERROR, never a mock result or insufficient-evidence judgment. `.env.example` lists variable names with blank values; Wrangler reads `api/.dev.vars`, not the root `.env`.
+
+For deployment, run these commands from `api/` to supply backend secrets:
+
+```sh
+pnpm exec wrangler secret put GEMINI_API_KEY
+pnpm exec wrangler secret put GEMINI_MODEL
+```
+
+Set `MOCK_MODE = "false"` in `api/wrangler.toml` before deploying real mode. The committed configuration deliberately defaults to `true`. Hosting must route `/api` to the Worker on the same origin; this PR does not deploy.
 
 ## Structure
 
@@ -36,11 +57,12 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to the Worker at http://127.0.0.
 - `api/`: TypeScript Cloudflare Worker. Build typechecks and bundles with Wrangler dry-run; it does not deploy or require a Cloudflare account.
 - `eval/`: plan for a future 40-claim gold benchmark.
 - `AGENTS.md`: verification and secret-handling rules.
-- `SOURCES.md`: evidence-source register; no religious sources approved yet.
+- `SOURCES.md`: approved source adapters, terms, and retrieval limitations.
+- `api/src/`: separate splitClaims, retrieve, route, verify, and gate modules; adapters in `sources/`. JSON-schema Gemini outputs are validated again in code. Tests inject mocked models and fetchers and make no live network calls.
 
 ## API contract
 
-`POST /api/verify`, `Content-Type: application/json`, body `{ "text": "Text to verify" }` (1–10000 characters after requiring non-whitespace text).
+`POST /api/verify`, `Content-Type: application/json`, body `{ "text": "Text to verify", "lang": "en" }`. `lang` is `ar` or `en` (defaults to `ar` for older clients); non-whitespace text must be at most 10000 characters. Up to five atomic claims and five evidence records per claim are returned. The example below is the unchanged mock mode response:
 
 ```json
 {
@@ -54,13 +76,23 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to the Worker at http://127.0.0.
 }
 ```
 
-Public claim statuses are `SUPPORTED`, `NEEDS_MORE_VERIFICATION`, `REFER_TO_SPECIALIST`. The scaffold always returns the same mock status; it makes no judgment. SYSTEM_ERROR is internal and represented by an HTTP 500 `{ "error": "SYSTEM_ERROR" }`, never converted into a claim needing verification. The web app renders request failures separately. Invalid input is HTTP 400, unsupported content type 415, method 405, and route 404.
+Claim statuses are `SUPPORTED`, `NEEDS_MORE_VERIFICATION`, `REFER_TO_SPECIALIST`, and `SYSTEM_ERROR`. Service failures are returned as SYSTEM_ERROR claims in the same response shape; HTTP 200 allows successful and failed claims in one request. Unexpected endpoint failures use HTTP 500 with that same shape. Invalid input is HTTP 400, unsupported content type 415, method 405, and route 404. The frontend shows red service-error badges separately from amber insufficient-evidence badges.
+
+The verifier sees source text and code-assigned IDs, without URL fields. It returns only `{ verdict, evidenceIds, missing }`; `missing` contains fixed diagnostic codes, never religious explanations. SUPPORTED requires `entails`, a non-empty list of valid retrieved IDs, and no missing parts. Other valid verdicts abstain. Malformed/failed model output is SYSTEM_ERROR. Response notes are fixed localized strings; URLs are mapped by the backend, not generated by Gemini. Source names appear in evidence titles; source-supplied grades remain in source text. Retrieved text is preserved, not rewritten by the model.
+
+## Retrieval and routing limits
+
+MCP endpoint: `https://mcp.islamiccontent.org/mcp` (stateless Streamable HTTP). Inspected `tools/list` on 2026-10-04: one cross-source `search({query, language, limit})` followed by `fetch({id})`. Search IDs are opaque and search results alone contain no evidence text. The adapter reads JSON or SSE, fetches full documents, and detects the observed corpus-unavailable notices even if other results were returned.
+
+If MCP fails, HadeethEnc's documented `hadeeths/search/?phrase=...&language=...` API is used, followed by `hadeeths/one`. QuranEnc's documented API supports verse lookup, not full-text search; its fallback uses explicit `Quran 2:255` / `القرآن ٢:٢٥٥` references only. Fallbacks cannot replace an IslamHouse search. Empty fallback recovery or any fallback API failure leaves SYSTEM_ERROR; a healthy MCP search with no results yields NEEDS_MORE_VERIFICATION.
+
+Referral rules conservatively cover Arabic/English personal rulings and juristic topics. A matching original request is referred before extraction to preserve personal context; otherwise each extracted claim is routed before retrieval/verifying. Rules may over-refer and do not constitute exhaustive intent detection. The five-claim cap processes the first five; submit longer texts separately. This pipeline has offline functional tests, not a measured 40-claim benchmark or a guarantee of semantic accuracy.
 
 ## Secrets and production boundary
 
-No API key is needed for the scaffold. `.env.example` contains only `GEMINI_API_KEY=`. Future backend secrets belong in environment variables: local Wrangler secrets may be supplied through ignored `api/.dev.vars`; deployed secrets through `wrangler secret put GEMINI_API_KEY`. Never add secrets to browser code or `VITE_*` variables, and never commit `.env` or `.dev.vars`.
+No API key is needed in mock mode. Keys and the model configuration belong in backend environment variables. Never add secrets to browser code or `VITE_*` variables, and never commit `.env` or `.dev.vars`. The API does not log credentials, upstream response bodies, or exception details.
 
-Future hosting must route `/api` to the Worker on the same origin. No production deployment or AI logic is included here.
+No production deployment is included here. Do not publish benchmark scores from mock mode.
 
 ## License
 

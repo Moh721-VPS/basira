@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-type Status = 'SUPPORTED' | 'NEEDS_MORE_VERIFICATION' | 'REFER_TO_SPECIALIST';
+type Status = 'SUPPORTED' | 'NEEDS_MORE_VERIFICATION' | 'REFER_TO_SPECIALIST' | 'SYSTEM_ERROR';
 type Claim = { id: string; text: string; status: Status; evidence: { id: string; title: string; url: string; snippet: string }[]; note: string };
 const copy = {
-  ar: { title: 'بصيرة', subtitle: 'التحقق من الادعاءات • IslamicAIch • المسار 04', demo: 'نموذج تجريبي: النتائج بيانات وهمية، ولا تمثل تحققًا أو فتوى.', label: 'النص المراد التحقق منه', placeholder: 'أدخل النص هنا…', verify: 'تحقق', busy: 'جارٍ التحميل…', results: 'النتائج', empty: 'ستظهر الادعاءات والأدلة هنا بعد الضغط على تحقق.', error: 'تعذر إكمال الطلب. حاول مرة أخرى؛ لم يصدر حكم تحقق.', statuses: { SUPPORTED: 'مدعوم', NEEDS_MORE_VERIFICATION: 'يحتاج إلى مزيد من التحقق', REFER_TO_SPECIALIST: 'يُحال إلى مختص' } },
-  en: { title: 'Basira', subtitle: 'Claim verification • IslamicAIch • Track 04', demo: 'Scaffold demo: results are mock data, not verification or a religious ruling.', label: 'Text to verify', placeholder: 'Enter text here…', verify: 'Verify', busy: 'Loading…', results: 'Results', empty: 'Claims and evidence will appear here after you select Verify.', error: 'The request failed. Try again; no verification judgment was made.', statuses: { SUPPORTED: 'Supported', NEEDS_MORE_VERIFICATION: 'Needs more verification', REFER_TO_SPECIALIST: 'Refer to specialist' } },
+  ar: { title: 'بصيرة', subtitle: 'التحقق من الادعاءات • IslamicAIch • المسار 04', demo: 'نتائج التحقق تستند إلى الأدلة المسترجعة، ولا تُعد فتوى. النتائج الموسومة بأنها تجريبية ليست تحققًا.', label: 'النص المراد التحقق منه', placeholder: 'أدخل النص هنا…', verify: 'تحقق', busy: 'جارٍ التحقق…', results: 'النتائج', empty: 'ستظهر الادعاءات والأدلة هنا بعد الضغط على تحقق.', error: 'تعذر إكمال الطلب. حاول مرة أخرى؛ لم يصدر حكم تحقق.', statuses: { SUPPORTED: 'مدعوم', NEEDS_MORE_VERIFICATION: 'يحتاج إلى مزيد من التحقق', REFER_TO_SPECIALIST: 'يُحال إلى مختص', SYSTEM_ERROR: 'تعذر التحقق — خطأ في الخدمة' } },
+  en: { title: 'Basira', subtitle: 'Claim verification • IslamicAIch • Track 04', demo: 'Verification uses retrieved evidence and does not provide religious rulings. Results marked MOCK DATA are demonstrations only.', label: 'Text to verify', placeholder: 'Enter text here…', verify: 'Verify', busy: 'Verifying…', results: 'Results', empty: 'Claims and evidence will appear here after you select Verify.', error: 'The request failed. Try again; no verification judgment was made.', statuses: { SUPPORTED: 'Supported', NEEDS_MORE_VERIFICATION: 'Needs more verification', REFER_TO_SPECIALIST: 'Refer to specialist', SYSTEM_ERROR: 'Verification failed — service error' } },
 };
+const badges: Record<Status, string> = { SUPPORTED: 'bg-emerald-100 text-emerald-900', NEEDS_MORE_VERIFICATION: 'bg-amber-100 text-amber-900', REFER_TO_SPECIALIST: 'bg-blue-100 text-blue-900', SYSTEM_ERROR: 'bg-red-100 text-red-900' };
 
 export default function App() {
   const [language, setLanguage] = useState<'ar' | 'en'>('ar');
@@ -20,10 +21,10 @@ export default function App() {
     event.preventDefault();
     setBusy(true); setError(false); setClaims([]);
     try {
-      const response = await fetch('/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal: AbortSignal.timeout(15000) });
-      if (!response.ok) throw new Error('Request failed');
+      const response = await fetch('/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang: language }), signal: AbortSignal.timeout(180000) });
       const data: { claims: Claim[] } = await response.json();
-      if (!Array.isArray(data.claims)) throw new Error('Invalid response');
+      if (!Array.isArray(data.claims) || !data.claims.length || data.claims.some(claim => !Object.hasOwn(badges, claim.status) || !Array.isArray(claim.evidence))) throw new Error('Invalid response');
+      if (!response.ok && !data.claims.every(claim => claim.status === 'SYSTEM_ERROR')) throw new Error('Request failed');
       setClaims(data.claims);
     } catch { setError(true); }
     finally { setBusy(false); }
@@ -43,8 +44,8 @@ export default function App() {
     <section className="mt-8" aria-labelledby="results-title" aria-busy={busy} aria-live="polite">
       <h2 id="results-title" className="mb-4 text-xl font-semibold">{t.results}</h2>
       {error ? <p role="alert" className="rounded-lg bg-red-50 p-4 text-red-800">{t.error}</p> : claims.length === 0 ? <p className="rounded-lg border border-dashed border-slate-300 p-6 text-slate-500">{t.empty}</p> : <ul className="space-y-4">{claims.map(claim => <li key={claim.id} className="rounded-xl border border-slate-200 bg-white p-5">
-        <p className="font-semibold" dir="auto">{claim.text}</p><p className="mt-2 text-sm font-medium text-emerald-800">{t.statuses[claim.status]}</p><p className="mt-2 text-sm text-slate-600" dir="auto">{claim.note}</p>
-        <ul className="mt-3 space-y-3">{claim.evidence.map(evidence => <li key={evidence.id} dir="auto"><a className="text-emerald-800 underline" href={evidence.url} target="_blank" rel="noreferrer">{evidence.id}: {evidence.title}</a><p className="text-sm text-slate-500">{evidence.snippet}</p></li>)}</ul>
+        <p className="font-semibold" dir="auto">{claim.text}</p><p className={`mt-2 inline-block rounded-full px-3 py-1 text-sm font-medium ${badges[claim.status]}`}>{t.statuses[claim.status]}</p><p role={claim.status === 'SYSTEM_ERROR' ? 'alert' : undefined} className={`mt-2 text-sm ${claim.status === 'SYSTEM_ERROR' ? 'text-red-800' : 'text-slate-600'}`} dir="auto">{claim.note}</p>
+        <ul className="mt-3 space-y-3">{claim.evidence.map(evidence => <li key={evidence.id} dir="auto"><a className="break-words text-emerald-800 underline" href={evidence.url} target="_blank" rel="noreferrer">{evidence.id}: {evidence.title}</a><p className="whitespace-pre-wrap break-words text-sm text-slate-500">{evidence.snippet}</p></li>)}</ul>
       </li>)}</ul>}
     </section>
   </main>;

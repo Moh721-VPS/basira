@@ -1,9 +1,15 @@
 # Evidence sources
 
-No religious source is approved or integrated in Task 1. Add sources only after documenting and reviewing their terms, reuse permissions, and suitability. Hadith grades must be copied from an approved source with attribution.
+Task 2 allowlists QuranEnc, HadeethEnc, and IslamHouse through the association's read-only MCP server, with direct QuranEnc/HadeethEnc API fallbacks. Evidence links must use HTTPS on `quranenc.com`, `hadeethenc.com`, `islamhouse.com`, or the MCP library's actual citation host `islamcontent.com`. Retrieved content is shown with its publisher and source link; hadith grades are copied only from source responses.
 
 | Source | URL | License/terms | How used |
 | --- | --- | --- | --- |
 | Mock evidence | https://example.com/ | Placeholder only; no source content copied | Fixed backend-authored URL and original placeholder snippet for demonstrating the response shape; not evidence for a claim |
+| Islamic Content MCP | https://mcp.islamiccontent.org/mcp | [Terms](https://mcp.islamiccontent.org/terms.html): free read-only access to published sources; no blanket relicensing of source works | Initialize, cross-source search, then fetch full source text; preserve returned citation URLs |
+| QuranEnc | https://quranenc.com | [API and terms](https://quranenc.com/en/home/api/): preserve content, attribution, version and transcript details; keep current; no inappropriate ads | MCP retrieval and explicit verse-reference API fallback; display complete returned Arabic text, translation and footnotes; fallback title includes translation/version |
+| HadeethEnc | https://hadeethenc.com | [Terms](https://hadeethenc.com/en/home), [published API collection](https://hadeethenc.com/HadeethEnc.com-API-v1.postman_collection_new.json): preserve content, publisher attribution and supplied version/transcript details; keep current; no inappropriate ads | MCP retrieval; public phrase-search/one API fallback; show original narration, source commentary, attribution and grade when supplied |
+| IslamHouse / Islamic Content library | https://islamhouse.com / https://islamcontent.com | MCP terms permit read-only access; individual works retain their own publisher/license terms | MCP search/fetch descriptions and citation links only; no downloads, rehosting, or model-generated summaries |
 
-Future source entries must record exact license/terms links, attribution requirements, retrieval method, and permitted storage/display. The backend will map evidence IDs to approved real URLs; the LLM must never generate URLs.
+No corpus is persisted or bulk downloaded. No retrieved source text is committed in test fixtures (fixtures are synthetic). Fields unsupported by an upstream response, including grades or versions, are never invented. Direct HadeethEnc responses currently omit version numbers; users can inspect the current publisher record through the citation. The MCP supplies formatted source text rather than a complete downloadable translation transcript; this app displays retrieved evidence, not republished books.
+
+Interface inspection on 2026-10-04: MCP `search` returns `{results:[{id,title,url}]}`; `fetch` returns document text, URL and metadata, in SSE/structuredContent. HadeethEnc exposes phrase search in its published Postman collection. QuranEnc has no documented full-text API search, so its fallback is restricted to explicit verse references. No IslamHouse API fallback is claimed. New sources require terms review and an explicit allowlist change.
