@@ -92,7 +92,7 @@ Referral rules conservatively cover Arabic/English personal rulings and juristic
 
 No API key is needed in mock mode. Keys and the model configuration belong in backend environment variables. Never add secrets to browser code or `VITE_*` variables, and never commit `.env` or `.dev.vars`. The API does not log credentials, upstream response bodies, or exception details.
 
-No production deployment is included here. Do not publish benchmark scores from mock mode.
+Production configuration and step-by-step deployment instructions are in [DEPLOY.md](DEPLOY.md). Run `pnpm check:deploy` to validate the website and Worker bundle, and `pnpm deploy` to publish after setting Cloudflare secrets. Publishing has not yet been completed. Do not publish benchmark scores from mock mode.
 
 ## License
 

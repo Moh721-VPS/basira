@@ -10,6 +10,13 @@ export type { ClaimStatus, VerifyResponse } from './types';
 
 export function createWorker(dependencies?: Dependencies) {
   return { async fetch(request: Request, env: Env = {}): Promise<Response> {
+    if (new URL(request.url).pathname === '/api/health') {
+      if (request.method !== 'GET') return Response.json({ error: 'METHOD_NOT_ALLOWED' }, { status: 405, headers: { Allow: 'GET' } });
+      const mode = env.MOCK_MODE === 'true' ? 'mock' : 'real';
+      const configured = mode === 'mock' || Boolean(env.GEMINI_API_KEY?.trim() && env.GEMINI_MODEL?.trim() && /^[a-zA-Z0-9._-]+$/.test(env.GEMINI_MODEL.trim()));
+      // Configuration readiness only; this does not claim upstream services work.
+      return Response.json({ mode, configured }, { status: configured ? 200 : 503, headers: { 'Cache-Control': 'no-store' } });
+    }
     if (new URL(request.url).pathname !== '/api/verify') return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
     if (request.method !== 'POST') return Response.json({ error: 'METHOD_NOT_ALLOWED' }, { status: 405, headers: { Allow: 'POST' } });
     if (!request.headers.get('Content-Type')?.toLowerCase().startsWith('application/json')) return Response.json({ error: 'EXPECTED_JSON' }, { status: 415 });

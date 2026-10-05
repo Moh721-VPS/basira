@@ -5,7 +5,9 @@
     "dev:web": "pnpm --dir web dev",
     "dev:api": "pnpm --dir api dev",
     "build": "pnpm --dir web build && pnpm --dir api build",
-    "test": "pnpm --dir api test"
+    "test": "pnpm --dir api test",
+    "check:deploy": "pnpm build && pnpm --dir api exec wrangler deploy --config wrangler.production.toml --dry-run --outdir dist/production",
+    "deploy": "pnpm build && pnpm --dir api exec wrangler deploy --config wrangler.production.toml"
   },
   "engines": { "node": ">=22.12.0" },
   "packageManager": "pnpm@11.25.0"

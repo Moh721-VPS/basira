@@ -3,6 +3,21 @@ import assert from 'node:assert/strict';
 import worker from './index';
 
 const request = (body: string) => new Request('https://basira.test/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+test('health distinguishes mock, missing configuration, and real configuration without leaking secrets', async () => {
+  const health = new Request('https://basira.test/api/health');
+  for (const [env, status, expected] of [
+    [{ MOCK_MODE: 'true' }, 200, { mode: 'mock', configured: true }],
+    [{ MOCK_MODE: 'false' }, 503, { mode: 'real', configured: false }],
+    [{ GEMINI_API_KEY: 'private-test-key', GEMINI_MODEL: 'test-model' }, 200, { mode: 'real', configured: true }],
+    [{ GEMINI_API_KEY: 'private-test-key', GEMINI_MODEL: '../invalid' }, 503, { mode: 'real', configured: false }],
+  ] as const) {
+    const response = await worker.fetch(health, env);
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.deepEqual(await response.json(), expected);
+  }
+  assert.equal((await worker.fetch(new Request(health, { method: 'POST' }))).status, 405);
+});
 test('valid input returns the mock contract and never claims support', async () => {
   const response = await worker.fetch(request(JSON.stringify({ text: 'Example claim', lang: 'en' })), { MOCK_MODE: 'true' });
   assert.equal(response.status, 200);
