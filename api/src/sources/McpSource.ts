@@ -1,9 +1,10 @@
 import { object, string, type Evidence, type EvidenceSource, type Lang } from '../types';
 import type { Fetcher } from '../http';
 import { approvedUrl } from '../retrieve';
+import { QuranEncSource } from './QuranEncSource';
 export class McpSource implements EvidenceSource {
   private nextId = 0;
-  constructor(private fetcher: Fetcher = fetch) {}
+  constructor(private fetcher: Fetcher = (url, init) => fetch(url, init)) {}
   private async rpc(method: string, params: unknown): Promise<Record<string, unknown>> {
     const id = ++this.nextId;
     const response = await this.fetcher('https://mcp.islamiccontent.org/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', 'MCP-Protocol-Version': '2025-03-26' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }), signal: AbortSignal.timeout(12000) });
@@ -39,6 +40,15 @@ export class McpSource implements EvidenceSource {
       if (doc.id !== record.id) throw new Error('Mismatched MCP document');
       const source = string(object(doc.metadata).source);
       if (!['QuranEnc', 'HadeethEnc', 'IslamHouse'].includes(source)) throw new Error('Unapproved source');
+      if (source === 'QuranEnc' && new URL(string(doc.url)).hostname === 'islamenc.com') {
+        // The MCP now links Quran hits to another domain. Fetch the verse anew
+        // from approved QuranEnc instead of relabelling unapproved evidence.
+        const metadata = object(doc.metadata);
+        if (!Number.isInteger(metadata.surah) || !Number.isInteger(metadata.aya)) throw new Error('Invalid Quran metadata');
+        const evidence = await new QuranEncSource(this.fetcher).search(`Quran ${metadata.surah}:${metadata.aya}`, lang);
+        if (evidence.length !== 1) throw new Error('Approved Quran evidence unavailable');
+        return evidence[0];
+      }
       return { title: string(doc.title), url: approvedUrl(doc.url), snippet: string(doc.text), source };
     }));
   }

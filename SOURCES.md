@@ -1,5 +1,7 @@
 # Evidence sources
 
+Live inspection on 2026-10-05 found that the MCP links some Quran results to `islamenc.com`, outside this project's approved citation hosts. For those QuranEnc records only, Basira uses the supplied numeric verse metadata to fetch new evidence from the approved QuranEnc API. It displays that API's own text and citation, not a relabelled MCP snippet. The allowlist is unchanged.
+
 Task 2 allowlists QuranEnc, HadeethEnc, and IslamHouse through the association's read-only MCP server, with direct QuranEnc/HadeethEnc API fallbacks. Evidence links must use HTTPS on `quranenc.com`, `hadeethenc.com`, `islamhouse.com`, or the MCP library's actual citation host `islamcontent.com`. Retrieved content is shown with its publisher and source link; hadith grades are copied only from source responses.
 
 | Source | URL | License/terms | How used |

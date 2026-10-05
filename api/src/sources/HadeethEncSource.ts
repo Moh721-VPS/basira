@@ -1,7 +1,7 @@
 import { getJson, type Fetcher } from '../http';
 import { object, string, type Evidence, type EvidenceSource, type Lang } from '../types';
 export class HadeethEncSource implements EvidenceSource {
-  constructor(private fetcher: Fetcher = fetch) {}
+  constructor(private fetcher: Fetcher = (url, init) => fetch(url, init)) {}
   async search(query: string, lang: Lang): Promise<Evidence[]> {
     const normalized = query.replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
     const match = normalized.match(/(?:hadeethenc(?:\.com)?|موسوعة الأحاديث)\s*(?:id|رقم|#|:)?\s*(\d+)\b/i);

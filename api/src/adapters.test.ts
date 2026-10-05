@@ -11,6 +11,7 @@ test('Gemini sends a JSON schema and environment model; key stays in header', as
     assert.equal(String(url), 'https://generativelanguage.googleapis.com/v1beta/models/test-model:generateContent');
     assert.equal(new Headers(init?.headers).get('x-goog-api-key'), 'test-key');
     const body = JSON.parse(String(init?.body));
+    assert.equal(body.generationConfig.responseFormat.text.mimeType, 'APPLICATION_JSON');
     assert.deepEqual(body.generationConfig.responseFormat.text.schema, { type: 'object' });
     assert.equal(String(init?.body).includes('test-key'), false);
     return Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"claims":["claim"]}' }] } }] });
@@ -21,6 +22,17 @@ test('Gemini HTTP errors, truncated output, invalid JSON are failures', async ()
   for (const response of [new Response('private upstream details', { status: 429 }), Response.json({ candidates: [{ finishReason: 'MAX_TOKENS' }] }), Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'invalid' }] } }] })]) {
     await assert.rejects(() => new Gemini({ GEMINI_API_KEY: 'test-key', GEMINI_MODEL: 'test-model' }, async () => response).generate('', {}, {}));
   }
+});
+test('Gemini recovers from a temporary gateway failure while authentication errors are not retried', async () => {
+  let calls = 0;
+  const model = new Gemini({ GEMINI_API_KEY: 'test-key', GEMINI_MODEL: 'test-model' }, async () => ++calls === 1
+    ? new Response(null, { status: 503 })
+    : Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"ok":true}' }] } }] }));
+  assert.deepEqual(await model.generate('', {}, {}), { ok: true });
+  assert.equal(calls, 2);
+  calls = 0;
+  await assert.rejects(() => new Gemini({ GEMINI_API_KEY: 'test-key', GEMINI_MODEL: 'test-model' }, async () => { calls++; return new Response(null, { status: 403 }); }).generate('', {}, {}));
+  assert.equal(calls, 1);
 });
 function mcpFetcher(partial = false, toolError = false, structured = true): Fetcher {
   return async (_url, init) => {
@@ -50,6 +62,23 @@ test('MCP handles inspected SSE search/fetch shape, opaque IDs, and source text'
 test('MCP partial failure and tool failure are not empty successful searches', async () => {
   await assert.rejects(() => new McpSource(mcpFetcher(true)).search('claim', 'en'));
   await assert.rejects(() => new McpSource(mcpFetcher(false, true)).search('claim', 'en'));
+});
+test('MCP Quran links on an unapproved domain are replaced only by freshly fetched approved evidence', async () => {
+  const fetcher: Fetcher = async (url, init) => {
+    if (String(url).startsWith('https://quranenc.com/')) return Response.json(String(url).includes('translations/list')
+      ? { translations: [{ key: 'english_test', version: '1', title: 'Approved translation' }] }
+      : { result: { sura: 2, aya: 255, arabic_text: 'Approved Arabic text', translation: 'Fresh approved text' } });
+    const rpc = JSON.parse(String(init?.body));
+    if (rpc.method === 'notifications/initialized') return new Response(null, { status: 202 });
+    const result = rpc.method === 'initialize' ? {} : rpc.params.name === 'search'
+      ? { structuredContent: { results: [{ id: 'quran:2:255:en' }] } }
+      : { structuredContent: { id: 'quran:2:255:en', title: 'Unapproved title', text: 'Do not use this text', url: 'https://islamenc.com/en/quran/2/255', metadata: { source: 'QuranEnc', surah: 2, aya: 255 } } };
+    return Response.json({ jsonrpc: '2.0', id: rpc.id, result });
+  };
+  const evidence = await new McpSource(fetcher).search('claim', 'en');
+  assert.equal(evidence[0].url, 'https://quranenc.com/en/browse/english_test/2#255');
+  assert.equal(evidence[0].snippet, 'Approved Arabic text\n\nFresh approved text');
+  assert.equal(evidence[0].title.includes('Unapproved'), false);
 });
 test('QuranEnc uses reference lookup and preserves source text, footnotes and version', async () => {
   const calls: string[] = [];
