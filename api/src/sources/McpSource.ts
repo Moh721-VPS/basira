@@ -8,7 +8,7 @@ export class McpSource implements EvidenceSource {
   private async rpc(method: string, params: unknown): Promise<Record<string, unknown>> {
     const id = ++this.nextId;
     const response = await this.fetcher('https://mcp.islamiccontent.org/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', 'MCP-Protocol-Version': '2025-03-26' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }), signal: AbortSignal.timeout(12000) });
-    if (!response.ok) throw new Error('MCP request failed');
+    if (!response.ok) { console.warn('BASIRA_MCP_HTTP_ERROR', response.status); throw new Error('MCP request failed'); }
     const body = await response.text();
     const messages: unknown[] = response.headers.get('Content-Type')?.includes('text/event-stream')
       ? body.replace(/\r\n/g, '\n').split('\n\n').flatMap(event => { const data = event.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n'); return data ? [JSON.parse(data)] : []; }) : [JSON.parse(body)];

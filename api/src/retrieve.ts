@@ -9,9 +9,10 @@ export async function retrieve(claim: string, lang: Lang, primary: EvidenceSourc
   let records;
   try { records = await primary.search(claim, lang); }
   catch {
+    console.warn('BASIRA_PRIMARY_FAILED');
     // Empty/failed fallbacks must never erase the original retrieval failure.
     const results = await Promise.allSettled(fallbacks.map(source => source.search(claim, lang)));
-    if (results.some(result => result.status === 'rejected')) throw new Error('Fallback retrieval failed');
+    if (results.some(result => result.status === 'rejected')) { console.warn('BASIRA_FALLBACK_FAILED'); throw new Error('Fallback retrieval failed'); }
     records = results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
     if (!records.length) throw new Error('Retrieval unavailable');
   }

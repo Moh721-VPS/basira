@@ -17,7 +17,7 @@ export class Gemini implements JsonModel {
       await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
     }
     // Never expose upstream bodies, prompts, or credentials in errors/logs.
-    if (!response.ok) throw new Error('Gemini request failed');
+    if (!response.ok) { console.warn('BASIRA_GEMINI_HTTP_ERROR', response.status); throw new Error('Gemini request failed'); }
     const data = object(await response.json());
     if (!Array.isArray(data.candidates) || data.candidates.length !== 1) throw new Error('Invalid Gemini response');
     const candidate = object(data.candidates[0]);

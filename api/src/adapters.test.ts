@@ -5,6 +5,14 @@ import { McpSource } from './sources/McpSource';
 import { QuranEncSource } from './sources/QuranEncSource';
 import { HadeethEncSource } from './sources/HadeethEncSource';
 import type { Fetcher } from './http';
+import { getJson } from './http';
+
+test('source requests use Workers-compatible manual redirects and reject redirected evidence', async () => {
+  await assert.rejects(() => getJson('https://quranenc.com/api/test', async (_url, init) => {
+    assert.equal(init?.redirect, 'manual');
+    return new Response(null, { status: 302, headers: { Location: 'https://unapproved.test/' } });
+  }));
+});
 
 test('Gemini sends a JSON schema and environment model; key stays in header', async () => {
   const fetcher: Fetcher = async (url, init) => {

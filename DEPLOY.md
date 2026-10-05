@@ -1,5 +1,9 @@
 # Live demo deployment
 
+Current public demo: https://basira.basira-api.workers.dev
+
+Published on 2026-10-05 with real verification and Gemini 3.1 Flash-Lite, which passed the full real pipeline after persistent overload failures from 3.8/3.7 Flash. The example below uses 3.8 Flash; choose the available model that passes your real-service tests. Publishing does not establish verification accuracy. The 40-claim independent benchmark is still pending.
+
 The production deployment serves the Vite website and verification API from one Cloudflare Worker. No custom domain is required. `api/wrangler.production.toml` uses real verification; local development still defaults to mock mode.
 
 ## Accounts

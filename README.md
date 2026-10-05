@@ -2,6 +2,10 @@
 
 Claim-verification web app for the IslamicAIch challenge, Track 04.
 
+Live demo: https://basira.basira-api.workers.dev
+
+The deployed demo uses real verification with Gemini 3.1 Flash-Lite, selected after persistent overload errors from 3.8/3.7 Flash. Local development still defaults to mock mode unless configured. Free-tier quotas and upstream availability can cause service errors; the independent 40-claim evaluation remains pending.
+
 Task 2 adds evidence retrieval and Gemini entailment checks. Basira does not answer from model memory or provide fatwas/personal rulings. Mock mode remains enabled by default so the app runs without credentials.
 
 ## Requirements and local setup
@@ -92,7 +96,7 @@ Referral rules conservatively cover Arabic/English personal rulings and juristic
 
 No API key is needed in mock mode. Keys and the model configuration belong in backend environment variables. Never add secrets to browser code or `VITE_*` variables, and never commit `.env` or `.dev.vars`. The API does not log credentials, upstream response bodies, or exception details.
 
-Production configuration and step-by-step deployment instructions are in [DEPLOY.md](DEPLOY.md). Run `pnpm check:deploy` to validate the website and Worker bundle, and `pnpm deploy` to publish after setting Cloudflare secrets. Publishing has not yet been completed. Do not publish benchmark scores from mock mode.
+Production configuration and step-by-step deployment instructions are in [DEPLOY.md](DEPLOY.md). Run `pnpm check:deploy` to validate the website and Worker bundle, and `pnpm deploy` to publish after setting Cloudflare secrets. The demo was published on 2026-10-05. Do not publish benchmark scores from mock mode.
 
 ## License
 
