@@ -6,6 +6,7 @@ export const notes = {
 };
 export function gate(id: string, text: string, evidence: IdentifiedEvidence[], result: Verdict, lang: Lang): ClaimResult {
   const supported = result.verdict === 'entails' && result.evidenceIds.length > 0 && result.missing.length === 0 && result.evidenceIds.every(evidenceId => evidence.some(item => item.id === evidenceId));
-  const selected = supported ? evidence.filter(item => result.evidenceIds.includes(item.id)) : evidence;
+  // Retrieved search hits are not established evidence for an unsupported claim.
+  const selected = supported ? evidence.filter(item => result.evidenceIds.includes(item.id)) : [];
   return { id, text, status: supported ? 'SUPPORTED' : 'NEEDS_MORE_VERIFICATION', evidence: selected.map(({ id, title, url, snippet, source }) => ({ id, title: `${source}: ${title}`, url, snippet })), note: supported ? notes[lang].supported : notes[lang].insufficient };
 }

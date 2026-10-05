@@ -36,7 +36,9 @@ for (const verdict of [
   { verdict: 'entails', evidenceIds: ['E1'], missing: ['PARTIAL_SUPPORT'] },
   { verdict: 'not_entails', evidenceIds: ['E1'], missing: ['CONFLICTING_EVIDENCE'] },
 ]) test(`gate abstains for ${JSON.stringify(verdict)}`, async () => {
-  assert.equal((await pipeline('Example claim', 'en', deps(verdict))).claims[0].status, 'NEEDS_MORE_VERIFICATION');
+  const result = (await pipeline('Example claim', 'en', deps(verdict))).claims[0];
+  assert.equal(result.status, 'NEEDS_MORE_VERIFICATION');
+  assert.deepEqual(result.evidence, []);
 });
 test('source failure and empty fallbacks remain SYSTEM_ERROR', async () => {
   const dependencies = deps();
@@ -56,13 +58,17 @@ test('fallback can recover evidence, but a failed fallback cannot be ignored', a
   assert.equal((await pipeline('Example claim', 'en', dependencies)).claims[0].status, 'SYSTEM_ERROR');
 });
 test('personal English and Arabic requests route before any network calls', async () => {
-  for (const claim of ['Can I stop fasting because of my illness?', 'هل يجوز لي ترك الصيام؟', 'Is my divorce valid?', 'هَلْ يَجُوزُ لِي القرض؟']) {
+  for (const claim of ['Can I stop fasting because of my illness?', 'هل يجوز لي ترك الصيام؟', 'Is my divorce valid?', 'هَلْ يَجُوزُ لِي القرض؟', 'هل عادي اني ما اصلي؟', 'هل عادي إني ما أصلي؟', 'عادي ما أصوم؟', 'ينفع أترك الصلاة؟', 'تارك الصلاة كافر', 'Not praying makes you a kafir']) {
     assert.equal(route(claim), true);
     const fail = async () => { throw new Error('Must not call'); };
     const result = await pipeline(claim, 'ar', { model: { generate: fail }, primary: { search: fail }, fallbacks: [] });
     assert.equal(result.claims[0].status, 'REFER_TO_SPECIALIST');
     assert.deepEqual(result.claims[0].evidence, []);
   }
+});
+
+test('ordinary prayer facts remain eligible for evidence verification', () => {
+  for (const claim of ['الصلاة من أركان الإسلام الخمسة', 'Prayer is one of the five pillars of Islam.']) assert.equal(route(claim), false);
 });
 test('extracted juristic case routes without retrieving or verifying', async () => {
   const dependencies = deps();
