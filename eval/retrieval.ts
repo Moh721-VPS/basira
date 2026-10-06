@@ -5,10 +5,9 @@ import { HadeethEncSource } from '../api/src/sources/HadeethEncSource';
 import { retrieve } from '../api/src/retrieve';
 import type { EvidenceSource, Lang } from '../api/src/types';
 const cases: { id: string; text: string; lang: Lang; source: EvidenceSource }[] = [
- { id: 'mcp-intentions-en', text: 'Actions are judged by intentions.', lang: 'en', source: new McpSource() },
  { id: 'mcp-intentions-ar', text: 'إنما الأعمال بالنيات.', lang: 'ar', source: new McpSource() },
- { id: 'mcp-negative', text: 'The Quran contains exactly 200 surahs.', lang: 'en', source: new McpSource() },
- { id: 'hadith-reference', text: 'hadeethenc 4560', lang: 'en', source: new HadeethEncSource() },
+ { id: 'mcp-negative-ar', text: 'القرآن يحتوي على مئتي سورة بالضبط.', lang: 'ar', source: new McpSource() },
+ { id: 'hadith-reference-ar', text: 'موسوعة الأحاديث رقم ٤٥٦٠', lang: 'ar', source: new HadeethEncSource() },
 ];
 const records = [];
 for (const item of cases) {

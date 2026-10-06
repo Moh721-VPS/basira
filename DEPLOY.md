@@ -42,7 +42,7 @@ Copy the HTTPS `workers.dev` URL printed by the successful deployment. That is t
 
 - Open the URL in a private browser window and on a phone.
 - Confirm `/api/health` reports `mode: real` and `configured: true`.
-- Submit real Arabic and English claims; open evidence links and compare source text.
+- Submit real Arabic claims and confirm English/mixed text is rejected; open evidence links and compare source text.
 - Confirm specialist requests produce referrals.
 - Confirm failures appear as service errors, not insufficient evidence or support.
 - Keep the collaborator's 40-claim gold set independent and run it only once the app is ready. Offline mock tests are not measured verification accuracy.

@@ -1,7 +1,7 @@
 import { object, string, type Evidence, type EvidenceSource, type Lang } from '../types';
 import { fetchSource, type Fetcher } from '../http';
 import { approvedUrl } from '../retrieve';
-import { QuranEncSource } from './QuranEncSource';
+import { QuranEncSource, quranReference } from './QuranEncSource';
 export class McpSource implements EvidenceSource {
   private nextId = 0;
   constructor(private fetcher: Fetcher = (url, init) => fetch(url, init)) {}
@@ -29,6 +29,7 @@ export class McpSource implements EvidenceSource {
     throw new Error('MCP missing structured response');
   }
   async search(query: string, lang: Lang): Promise<Evidence[]> {
+    if (quranReference(query)) return new QuranEncSource(this.fetcher).search(query, lang);
     await this.rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'basira', version: '0.2.0' } });
     const initialized = await fetchSource('https://mcp.islamiccontent.org/mcp', this.fetcher, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', 'MCP-Protocol-Version': '2025-03-26' },
@@ -48,11 +49,15 @@ export class McpSource implements EvidenceSource {
         // from approved QuranEnc instead of relabelling unapproved evidence.
         const metadata = object(doc.metadata);
         if (!Number.isInteger(metadata.surah) || !Number.isInteger(metadata.aya)) throw new Error('Invalid Quran metadata');
-        const evidence = await new QuranEncSource(this.fetcher).search(`Quran ${metadata.surah}:${metadata.aya}`, lang);
+        const evidence = await new QuranEncSource(this.fetcher).search(`القرآن ${metadata.surah}:${metadata.aya}`, lang);
         if (evidence.length !== 1) throw new Error('Approved Quran evidence unavailable');
         return evidence[0];
       }
-      return { title: string(doc.title), url: approvedUrl(doc.url), snippet: string(doc.text), source };
+      const commentary = Array.isArray(doc.segments) ? doc.segments.map(object).filter(segment => segment.kind === 'commentary' && typeof segment.text === 'string' && segment.text.length <= 40000).map(segment => String(segment.text)) : [];
+      // Translate connector field labels, never the publisher's source prose.
+      const labels: Record<string, string> = { Narrator: 'نسبة النص', Grade: 'درجة الحديث', Explanation: 'الشرح', Benefits: 'الفوائد' };
+      const snippet = string(doc.text).replace(/^(Narrator|Grade|Explanation|Benefits):/gm, (_match, label: string) => `${labels[label]}:`);
+      return { title: string(doc.title), url: approvedUrl(doc.url), snippet, source, commentary };
     }));
   }
 }

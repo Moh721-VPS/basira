@@ -5,7 +5,7 @@ Reviewed the actual repository, production configuration, deployed API, and exis
 | Scope item | Current evidence / limitation |
 | --- | --- |
 | Track 04 source-backed claim verification | Implemented: split → route → retrieve → verify → gate. Real services are deployed. |
-| Arabic and English | Implemented; RTL/LTR browser checks passed. Fixed Arabic Quran retrieval using the source's Arabic original with a labelled English translation edition. |
+| العربية فقط | الواجهة والتحقق والصوت عربي فقط. النص الإنجليزي والمختلط مرفوض، وتُستبعد الترجمات الإنجليزية من الأدلة. |
 | Three public outcome categories | Implemented; SYSTEM_ERROR remains a separate service-failure state. |
 | Abstention and no personal rulings | Implemented in prompts, referral rules and backend gate; colloquial personal requests refer before network calls. Routing is heuristic and not exhaustive. |
 | Backend source attribution | Model returns evidence IDs; backend maps approved source URLs. Hadith grade remains verbatim source text. Full source passages are shown, without claiming exact highlighted quotations. |

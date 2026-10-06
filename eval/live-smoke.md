@@ -1,3 +1,5 @@
+> سجل تاريخي قبل اعتماد العربية وحدها؛ لا يصف دعم اللغات الحالي. انظر README.md وvalidation-arabic-2026-10-06.md.
+
 # Public deployment smoke checks
 
 Date: 2026-10-05. Endpoint: https://basira.basira-api.workers.dev
