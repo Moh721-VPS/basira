@@ -81,3 +81,60 @@ footer p { max-width: 570px; line-height: 1.8; margin: 0; }
 @media (max-width: 850px) { .workspace { grid-template-columns: minmax(0, 1fr); } aside { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; } }
 @media (max-width: 550px) { .app-shell { padding: 0 17px; } .topbar { gap: 12px; } .track { display: none; } .hero { padding: 30px 0; } .hero > p:not(.eyebrow) { font-size: 15px; } .composer, .claim-card { padding: 18px; } .panel-heading { font-size: 17px; } aside { grid-template-columns: 1fr; } .primary { width: 100%; } footer { flex-direction: column; gap: 10px; } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+/* Product tokens matched to the editable Figma design. */
+:root { --color-paper:#faf7f0; --color-surface:#fff; --color-ink:#112725; --color-muted:#677c74; --color-brand:#146956; --color-mint:#ddeee5; --color-amber:#edb772; --color-line:#dce3db; --color-danger:#ae4a43; --space-8:8px; --space-12:12px; --space-16:16px; --space-24:24px; --space-32:32px; --space-48:48px; --radius-12:12px; --radius-20:20px; }
+body { background:var(--color-paper);color:var(--color-ink);font-family:'Manrope',Arial,sans-serif; }
+html[lang="ar"] body { font-family:'Noto Sans Arabic',Tahoma,Arial,sans-serif; }
+.app-shell { max-width:1440px;padding:0 var(--space-48); }
+.topbar { padding:var(--space-48) 0 0;border:0;gap:var(--space-24); }
+.brand { font-size:24px;line-height:1.7;font-weight:700; }
+.topbar .button { min-width:120px;height:54px; }
+.button { border-radius:var(--radius-12);font-size:13px;line-height:1.7;font-weight:700;min-height:54px; }
+.secondary { border:1px solid var(--color-ink);color:var(--color-ink);background:var(--color-surface); }
+.primary { background:var(--color-brand);border-color:var(--color-ink);color:var(--color-surface);justify-content:center;gap:0; }
+.hero { max-width:none;padding:var(--space-32) 0 var(--space-32); }
+.hero .eyebrow { color:var(--color-muted);font-size:11px;line-height:1.7;min-height:23px;letter-spacing:0;margin:0 0 var(--space-32); }
+.hero h1 { font-size:48px;line-height:1.7;min-height:168px;font-weight:700;letter-spacing:0;margin:0 0 var(--space-32); }
+.hero > p:not(.eyebrow) { color:var(--color-muted);font-size:15px;line-height:1.7;min-height:30px;max-width:none; }
+.workspace { grid-template-columns:minmax(0,1fr) 400px;gap:var(--space-32); }
+.panel { border:0;box-shadow:none; }
+.composer { padding:var(--space-24);border-radius:var(--radius-20); }
+.input-tabs { display:flex;gap:var(--space-12);margin-bottom:var(--space-16); }
+.input-tabs button { flex:1;min-width:0; }
+textarea { height:174px;min-height:174px;margin:0;background:var(--color-surface);border:1px solid var(--color-line);font-size:15px;line-height:1.7;color:var(--color-ink);padding:var(--space-16);border-radius:var(--radius-12); }
+textarea::placeholder { color:#919c96; }
+.editor-meta { color:var(--color-muted);margin-bottom:var(--space-16); }
+.examples { padding-bottom:var(--space-16); }
+.examples button { background:var(--color-paper);border-color:var(--color-line);color:var(--color-brand); }
+.form-actions { border:0;padding-top:0; }
+.form-actions .primary { width:100%; }
+.limits { margin:var(--space-16) 0; }
+.how { background:var(--color-ink);color:var(--color-surface);padding:var(--space-32);border-radius:0;min-height:436px;display:flex;flex-direction:column;gap:var(--space-24); }
+.how .eyebrow { color:var(--color-amber);margin:0;font-size:11px; }
+.how h2 { font-size:24px;line-height:1.7;margin:0; }
+.method-copy { font-size:15px;line-height:1.7;color:var(--color-mint);margin:0; }
+.source-tags { display:flex;flex-direction:column;gap:4px;font-family:'Manrope',Arial,sans-serif;font-size:15px;direction:ltr;text-align:left;color:var(--color-mint); }
+.source-tags a,.source-tags span { background:none;border:0;padding:0;border-radius:0;font-size:15px; }
+.boundary { margin:0;padding:0;background:none;color:var(--color-mint);font-size:11px;line-height:1.7; }
+.hint { color:var(--color-muted);line-height:1.7;font-size:11px; }
+.voice-action { background:var(--color-amber);color:var(--color-ink);border:1px solid var(--color-ink); }
+.voice-input { padding:var(--space-16) 0 0; }
+.voice-input h3 { font-size:24px;font-weight:700;margin:0 0 var(--space-24);line-height:1.7; }
+.voice-input>.button { width:100%; }
+.voice-input .text-button { display:block;margin:var(--space-16) 0; }
+.waveform { display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:76px;margin:var(--space-24) 0; }
+.waveform span { width:5px;flex-shrink:0;background:var(--color-brand); }
+.voice-time { font-size:15px;text-align:end;margin:var(--space-24) 0; }
+.voice-notice { color:var(--color-danger);font-size:13px;line-height:1.7;margin-top:var(--space-16); }
+.transcript-heading { font-size:24px;line-height:1.7;margin-bottom:var(--space-16); }
+.report-audio { background:var(--color-surface);border-radius:var(--radius-20);padding:var(--space-24);margin-bottom:var(--space-24); }
+.report-audio .button,.report-audio audio { width:100%; }
+.report-audio .hint { margin-top:var(--space-12); }
+.claim-card { border:1px solid var(--color-line);border-inline-start-width:3px;border-radius:var(--radius-20); }
+.sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
+[hidden] { display:none !important; }
+footer { color:var(--color-muted); }
+@media(max-width:1100px) { .workspace { grid-template-columns:minmax(0,1fr) 320px; } }
+@media(max-width:850px) { .workspace { grid-template-columns:minmax(0,1fr); } aside { display:block; } .how { min-height:0; } }
+@media(max-width:550px) { .app-shell { padding:0 var(--space-16); } .topbar { padding:var(--space-16) 0 0; } .hero { padding:var(--space-24) 0; } .hero h1 { font-size:35px;line-height:1.7;min-height:123px;margin-bottom:var(--space-24); } .hero > p:not(.eyebrow) { min-height:55px; } .hero .eyebrow { margin-bottom:var(--space-24); } .composer { padding:var(--space-24); } .report-audio { padding:var(--space-16); } .workspace { gap:var(--space-24); } .voice-time { text-align:center; } }

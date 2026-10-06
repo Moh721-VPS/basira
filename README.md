@@ -10,7 +10,7 @@ Basira retrieves source evidence and checks whether it directly supports each co
 
 Repository: https://github.com/Moh721-VPS/basira
 
-The bilingual interface includes example inputs, status counts and filters, expandable source passages, copy/download reports, and cancellation of client-side waiting. Cancellation does not guarantee an already-running upstream request stops. Social-media link analysis, offline verification, native mobile apps, and alternate model-provider failover are not implemented.
+The bilingual interface includes example inputs, status counts and filters, expandable source passages, copy/download reports, and cancellation of client-side waiting. A Figma-guided interface and opt-in ElevenLabs voice input/report narration are implemented; voice remains disabled until credentials and real-service checks are completed. See [VOICE.md](VOICE.md). Cancellation does not guarantee an already-running upstream request stops. Social-media link analysis, offline verification, native mobile apps, and alternate model-provider failover are not implemented.
 
 ## Requirements and local setup
 

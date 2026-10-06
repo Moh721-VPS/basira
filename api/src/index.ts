@@ -5,11 +5,13 @@ import { HadeethEncSource } from './sources/HadeethEncSource';
 import { pipeline, type Dependencies } from './pipeline';
 import { mock } from './mock';
 import { notes } from './gate';
+import { signSpeechReport, voiceRoute } from './voice';
 import type { Env, Lang } from './types';
 export type { ClaimStatus, VerifyResponse } from './types';
 
 export function createWorker(dependencies?: Dependencies) {
   return { async fetch(request: Request, env: Env = {}): Promise<Response> {
+    const voice = await voiceRoute(request, env); if (voice) return voice;
     if (new URL(request.url).pathname === '/api/health') {
       if (request.method !== 'GET') return Response.json({ error: 'METHOD_NOT_ALLOWED' }, { status: 405, headers: { Allow: 'GET' } });
       const mode = env.MOCK_MODE === 'true' ? 'mock' : 'real';
@@ -28,7 +30,9 @@ export function createWorker(dependencies?: Dependencies) {
       if ('lang' in body && body.lang !== 'ar' && body.lang !== 'en') return Response.json({ error: 'INVALID_LANG' }, { status: 400 });
       text = body.text.trim(); lang = 'lang' in body ? body.lang as Lang : 'ar';
       const result = env.MOCK_MODE === 'true' ? mock(text) : await pipeline(text, lang, dependencies ?? { model: new Gemini(env), primary: new McpSource(), fallbacks: [new QuranEncSource(), new HadeethEncSource()] });
-      return Response.json(result, { headers: { 'Cache-Control': 'no-store' } });
+      let speechToken: string | undefined;
+      try { speechToken = await signSpeechReport(result, lang, env); } catch { /* Voice must never fail verification. */ }
+      return Response.json({ ...result, ...(speechToken ? { speechToken } : {}) }, { headers: { 'Cache-Control': 'no-store' } });
     } catch {
       return Response.json({ claims: [{ id: 'C1', text, status: 'SYSTEM_ERROR', evidence: [], note: notes[lang].error }] }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
     }

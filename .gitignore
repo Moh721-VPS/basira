@@ -10,3 +10,4 @@ dist/
 *.local
 *.log
 eval/results/
+.design/
