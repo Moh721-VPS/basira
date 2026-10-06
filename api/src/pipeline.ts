@@ -17,9 +17,10 @@ export async function pipeline(text: string, lang: Lang, deps: Dependencies): Pr
     let stage = 'RETRIEVAL';
     try {
       const evidence = await retrieve(claim, lang, deps.primary, deps.fallbacks);
+      console.info('BASIRA_RETRIEVED', evidence.length);
       stage = 'VERIFICATION';
       const verdict = evidence.length ? await verify(claim, evidence, deps.model) : { verdict: 'not_entails' as const, evidenceIds: [], missing: ['INSUFFICIENT_EVIDENCE'] };
-      return gate(id, claim, evidence, verdict, lang);
+      return { ...gate(id, claim, evidence, verdict, lang), retrieval: { count: evidence.length, sources: [...new Set(evidence.map(item => item.source))] } };
     } catch { console.warn(`BASIRA_${stage}_FAILED`); return result(id, claim, 'SYSTEM_ERROR'); }
   }));
   return { claims: results };

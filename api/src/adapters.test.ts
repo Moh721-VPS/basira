@@ -14,6 +14,22 @@ test('source requests use Workers-compatible manual redirects and reject redirec
   }));
 });
 
+test('source requests recover once from transient gateway/network errors without retrying auth or quota failures', async () => {
+  for (const transient of [502, 503, 504, 'network']) {
+    let calls = 0;
+    const data = await getJson('https://quranenc.com/api/test', async () => {
+      if (++calls === 1) { if (transient === 'network') throw new TypeError('Network failed'); return new Response(null, { status: Number(transient) }); }
+      return Response.json({ recovered: true });
+    });
+    assert.deepEqual(data, { recovered: true }); assert.equal(calls, 2);
+  }
+  for (const status of [403, 429, 503]) {
+    let calls = 0;
+    await assert.rejects(() => getJson('https://quranenc.com/api/test', async () => { calls++; return new Response(null, { status }); }));
+    assert.equal(calls, status === 503 ? 2 : 1);
+  }
+});
+
 test('Gemini sends a JSON schema and environment model; key stays in header', async () => {
   const fetcher: Fetcher = async (url, init) => {
     assert.equal(String(url), 'https://generativelanguage.googleapis.com/v1beta/models/test-model:generateContent');
@@ -71,6 +87,18 @@ test('MCP partial failure and tool failure are not empty successful searches', a
   await assert.rejects(() => new McpSource(mcpFetcher(true)).search('claim', 'en'));
   await assert.rejects(() => new McpSource(mcpFetcher(false, true)).search('claim', 'en'));
 });
+
+test('MCP retries an unavailable-corpus notice once and only uses a fully recovered response', async () => {
+  let searches = 0;
+  const partial = mcpFetcher(true), healthy = mcpFetcher();
+  const fetcher: Fetcher = async (url, init) => {
+    const rpc = JSON.parse(String(init?.body));
+    if (rpc.params?.name === 'search') return (++searches === 1 ? partial : healthy)(url, init);
+    return healthy(url, init);
+  };
+  assert.equal((await new McpSource(fetcher).search('claim', 'en')).length, 1);
+  assert.equal(searches, 2);
+});
 test('MCP Quran links on an unapproved domain are replaced only by freshly fetched approved evidence', async () => {
   const fetcher: Fetcher = async (url, init) => {
     if (String(url).startsWith('https://quranenc.com/')) return Response.json(String(url).includes('translations/list')
@@ -90,14 +118,16 @@ test('MCP Quran links on an unapproved domain are replaced only by freshly fetch
 });
 test('QuranEnc uses reference lookup and preserves source text, footnotes and version', async () => {
   const calls: string[] = [];
-  const fetcher: Fetcher = async url => { calls.push(String(url)); return Response.json(String(url).includes('translations/list') ? { translations: [{ key: 'arabic_test', version: '1.0', title: 'Source translation' }] } : { result: { sura: '1', aya: '1', arabic_text: 'نص المصدر', translation: 'Source translation text', footnotes: 'Source footnotes' } }); };
+    const fetcher: Fetcher = async url => { calls.push(String(url)); return Response.json(String(url).includes('translations/list') ? { translations: [{ key: 'english_test', version: '1.0', title: 'Source translation' }] } : { result: { sura: '1', aya: '1', arabic_text: 'نص المصدر', translation: 'Source translation text', footnotes: 'Source footnotes' } }); };
   const source = new QuranEncSource(fetcher);
   assert.deepEqual(await source.search('General claim', 'ar'), []);
   const result = await source.search('القرآن ١:١ نص المصدر', 'ar');
   assert.equal(calls.length, 2);
   assert.equal(result[0].snippet, 'نص المصدر\n\nSource translation text\n\nSource footnotes');
   assert.match(result[0].title, /v1.0/);
-  assert.equal(result[0].url, 'https://quranenc.com/ar/browse/arabic_test/1#1');
+  assert.equal(calls[0], 'https://quranenc.com/api/v1/translations/list/en?localization=ar');
+  assert.match(result[0].title, /translation: en/);
+  assert.equal(result[0].url, 'https://quranenc.com/ar/browse/english_test/1#1');
 });
 test('HadeethEnc performs documented phrase search then fetches source grading verbatim', async () => {
   for (const grade of ['Authentic', undefined]) {

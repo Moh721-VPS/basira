@@ -9,12 +9,16 @@ export class QuranEncSource implements EvidenceSource {
     if (!match) return [];
     const sura = Number(match[1]), aya = Number(match[2]);
     if (sura < 1 || sura > 114 || aya < 1 || aya > 286) throw new Error('Invalid Quran reference');
-    const translations = object(await getJson(`https://quranenc.com/api/v1/translations/list/${lang}?localization=${lang}`, this.fetcher));
+    // The API catalogue lists translations, not the Arabic original. Every
+    // verse response includes arabic_text; use an explicitly labelled English
+    // translation edition for Arabic requests rather than an empty /list/ar.
+    const translationLang = lang === 'ar' ? 'en' : lang;
+    const translations = object(await getJson(`https://quranenc.com/api/v1/translations/list/${translationLang}?localization=${lang}`, this.fetcher));
     if (!Array.isArray(translations.translations) || !translations.translations.length) throw new Error('No translation available');
     const translation = object(translations.translations[0]), key = string(translation.key), version = string(translation.version);
     const result = object(object(await getJson(`https://quranenc.com/api/v1/translation/aya/${encodeURIComponent(key)}/${sura}/${aya}`, this.fetcher)).result);
     if (Number(result.sura) !== sura || Number(result.aya) !== aya) throw new Error('Mismatched Quran verse');
     const snippet = [string(result.arabic_text), string(result.translation), typeof result.footnotes === 'string' ? result.footnotes : ''].filter(Boolean).join('\n\n');
-    return [{ source: 'QuranEnc', title: `${string(translation.title)} — ${sura}:${aya} (v${version})`, url: `https://quranenc.com/${lang}/browse/${encodeURIComponent(key)}/${sura}#${aya}`, snippet }];
+    return [{ source: 'QuranEnc', title: `${string(translation.title)} — ${sura}:${aya} (v${version}; translation: ${translationLang})`, url: `https://quranenc.com/${lang}/browse/${encodeURIComponent(key)}/${sura}#${aya}`, snippet }];
   }
 }

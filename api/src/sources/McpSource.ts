@@ -1,5 +1,5 @@
 import { object, string, type Evidence, type EvidenceSource, type Lang } from '../types';
-import type { Fetcher } from '../http';
+import { fetchSource, type Fetcher } from '../http';
 import { approvedUrl } from '../retrieve';
 import { QuranEncSource } from './QuranEncSource';
 export class McpSource implements EvidenceSource {
@@ -7,7 +7,7 @@ export class McpSource implements EvidenceSource {
   constructor(private fetcher: Fetcher = (url, init) => fetch(url, init)) {}
   private async rpc(method: string, params: unknown): Promise<Record<string, unknown>> {
     const id = ++this.nextId;
-    const response = await this.fetcher('https://mcp.islamiccontent.org/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', 'MCP-Protocol-Version': '2025-03-26' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }), signal: AbortSignal.timeout(12000) });
+    const response = await fetchSource('https://mcp.islamiccontent.org/mcp', this.fetcher, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', 'MCP-Protocol-Version': '2025-03-26' }, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) });
     if (!response.ok) { console.warn('BASIRA_MCP_HTTP_ERROR', response.status); throw new Error('MCP request failed'); }
     const body = await response.text();
     const messages: unknown[] = response.headers.get('Content-Type')?.includes('text/event-stream')
@@ -16,20 +16,23 @@ export class McpSource implements EvidenceSource {
     if (!message || message.error) throw new Error('MCP protocol failed');
     return object(message.result);
   }
-  private async call(name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+  private async call(name: string, args: Record<string, unknown>, retryPartial = true): Promise<Record<string, unknown>> {
     const result = await this.rpc('tools/call', { name, arguments: args });
     if (result.isError) throw new Error('MCP tool failed');
     const content = Array.isArray(result.content) ? result.content.map(object) : [];
-    if (content.some(block => typeof block.text === 'string' && /(?:quran|hadith|library):\s*unavailable|timed out|upstream.*(?:failed|error)/i.test(block.text))) throw new Error('MCP partial failure');
+    if (content.some(block => typeof block.text === 'string' && /(?:quran|hadith|library):\s*unavailable|timed out|upstream.*(?:failed|error)/i.test(block.text))) {
+      if (retryPartial) { console.info('BASIRA_MCP_PARTIAL_RETRY'); return this.call(name, args, false); }
+      throw new Error('MCP partial failure');
+    }
     if (result.structuredContent) return object(result.structuredContent);
     for (const block of content) { if (block.type === 'text' && typeof block.text === 'string') { try { return object(JSON.parse(block.text)); } catch { /* try next block */ } } }
     throw new Error('MCP missing structured response');
   }
   async search(query: string, lang: Lang): Promise<Evidence[]> {
     await this.rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'basira', version: '0.2.0' } });
-    const initialized = await this.fetcher('https://mcp.islamiccontent.org/mcp', {
+    const initialized = await fetchSource('https://mcp.islamiccontent.org/mcp', this.fetcher, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', 'MCP-Protocol-Version': '2025-03-26' },
-      body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }), signal: AbortSignal.timeout(12000),
+      body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
     });
     if (!initialized.ok) throw new Error('MCP initialization failed');
     await initialized.body?.cancel();

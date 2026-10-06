@@ -2,7 +2,7 @@
 
 Current public demo: https://basira.basira-api.workers.dev
 
-Published on 2026-10-05 with real verification and Gemini 3.1 Flash-Lite, which passed the full real pipeline after persistent overload failures from 3.8/3.7 Flash. The example below uses 3.8 Flash; choose the available model that passes your real-service tests. Publishing does not establish verification accuracy. The 40-claim independent benchmark is still pending.
+Published on 2026-10-05 with real verification and Gemini 3.1 Flash-Lite. Choose a model available to your Google project and test it before changing production. Publishing does not establish verification accuracy. The human-reviewed 40-claim benchmark is still pending.
 
 The production deployment serves the Vite website and verification API from one Cloudflare Worker. No custom domain is required. `api/wrangler.production.toml` uses real verification; local development still defaults to mock mode.
 
@@ -16,7 +16,7 @@ Create the ignored file `api/.dev.vars` using these names and your own key:
 
 ```dotenv
 GEMINI_API_KEY=your-key
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.1-flash-lite
 MOCK_MODE=false
 ```
 

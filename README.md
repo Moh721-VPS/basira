@@ -6,7 +6,11 @@ Live demo: https://basira.basira-api.workers.dev
 
 The deployed demo uses real verification with Gemini 3.1 Flash-Lite, selected after persistent overload errors from 3.8/3.7 Flash. Local development still defaults to mock mode unless configured. Free-tier quotas and upstream availability can cause service errors; the independent 40-claim evaluation remains pending.
 
-Task 2 adds evidence retrieval and Gemini entailment checks. Basira does not answer from model memory or provide fatwas/personal rulings. Mock mode remains enabled by default so the app runs without credentials.
+Basira retrieves source evidence and checks whether it directly supports each complete claim. It does not answer from model memory or provide fatwas/personal rulings. Local mock mode allows development without credentials; the public demo uses real services.
+
+Repository: https://github.com/Moh721-VPS/basira
+
+The bilingual interface includes example inputs, status counts and filters, expandable source passages, copy/download reports, and cancellation of client-side waiting. Cancellation does not guarantee an already-running upstream request stops. Social-media link analysis, offline verification, native mobile apps, and alternate model-provider failover are not implemented.
 
 ## Requirements and local setup
 
@@ -40,26 +44,28 @@ Create the ignored file `api/.dev.vars` locally with these three variables (supp
 
 ```dotenv
 GEMINI_API_KEY=your-key-here
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.1-flash-lite
 MOCK_MODE=false
 ```
 
-Restart the Worker after changing configuration. `GEMINI_MODEL` has no runtime default. As checked on 2026-10-04, Google lists `gemini-3.8-flash` as its current stable Flash model with free-tier input/output tokens: [models](https://ai.google.dev/gemini-api/docs/models), [pricing](https://ai.google.dev/gemini-api/docs/pricing). Availability and quotas depend on the Google project. Missing configuration or an API quota/error produces SYSTEM_ERROR, never a mock result or insufficient-evidence judgment. `.env.example` lists variable names with blank values; Wrangler reads `api/.dev.vars`, not the root `.env`.
+Restart the Worker after changing configuration. `GEMINI_MODEL` has no runtime default. The example uses the deployed model; choose a model available to your Google project and validate it with real-service checks. Availability and quotas depend on the project. Missing configuration or an API quota/error produces SYSTEM_ERROR, never a mock result or insufficient-evidence judgment. `.env.example` lists variable names with blank values; Wrangler reads `api/.dev.vars`, not the root `.env`.
 
-For deployment, run these commands from `api/` to supply backend secrets:
+For production deployment, run these commands from the repository root:
 
 ```sh
-pnpm exec wrangler secret put GEMINI_API_KEY
-pnpm exec wrangler secret put GEMINI_MODEL
+pnpm --dir api exec wrangler secret put GEMINI_API_KEY --config wrangler.production.toml
+pnpm --dir api exec wrangler secret put GEMINI_MODEL --config wrangler.production.toml
+pnpm check:deploy
+pnpm deploy
 ```
 
-Set `MOCK_MODE = "false"` in `api/wrangler.toml` before deploying real mode. The committed configuration deliberately defaults to `true`. Hosting must route `/api` to the Worker on the same origin; this PR does not deploy.
+`api/wrangler.production.toml` selects real mode and serves the website and `/api` on one origin. `api/wrangler.toml` remains the local mock configuration. See [DEPLOY.md](DEPLOY.md) for authentication and deployment details.
 
 ## Structure
 
-- `web/`: React, Vite, TypeScript, Tailwind, responsive single page and PWA manifest/icon. Offline caching/service worker and production hosting are not included.
+- `web/`: React, Vite, TypeScript, Tailwind, responsive single page and PWA manifest/icon. Production hosting uses Worker assets. Offline caching/service worker is not implemented.
 - `api/`: TypeScript Cloudflare Worker. Build typechecks and bundles with Wrangler dry-run; it does not deploy or require a Cloudflare account.
-- `eval/`: plan for a future 40-claim gold benchmark.
+- `eval/`: live regression, retrieval, and adversarial checks plus a plan for a human-reviewed 40-claim benchmark. Starter checks are not independent gold labels or measured accuracy.
 - `AGENTS.md`: verification and secret-handling rules.
 - `SOURCES.md`: approved source adapters, terms, and retrieval limitations.
 - `api/src/`: separate splitClaims, retrieve, route, verify, and gate modules; adapters in `sources/`. JSON-schema Gemini outputs are validated again in code. Tests inject mocked models and fetchers and make no live network calls.
@@ -91,6 +97,16 @@ MCP endpoint: `https://mcp.islamiccontent.org/mcp` (stateless Streamable HTTP). 
 If MCP fails, HadeethEnc's documented `hadeeths/search/?phrase=...&language=...` API is used, followed by `hadeeths/one`. QuranEnc's documented API supports verse lookup, not full-text search; its fallback uses explicit `Quran 2:255` / `القرآن ٢:٢٥٥` references only. Fallbacks cannot replace an IslamHouse search. Empty fallback recovery or any fallback API failure leaves SYSTEM_ERROR; a healthy MCP search with no results yields NEEDS_MORE_VERIFICATION.
 
 Referral rules conservatively cover Arabic/English personal rulings and juristic topics. A matching original request is referred before extraction to preserve personal context; otherwise each extracted claim is routed before retrieval/verifying. Rules may over-refer and do not constitute exhaustive intent detection. The five-claim cap processes the first five; submit longer texts separately. This pipeline has offline functional tests, not a measured 40-claim benchmark or a guarantee of semantic accuracy.
+
+Successful retrieval adds optional `retrieval: {count, sources}` metadata to each claim result. This counts fetched passages and publisher metadata; it does not establish relevance or entailment. Referral and failed verification results do not claim retrieval success. Unsupported results omit search hits from the evidence list, while the retrieval count remains visible. `BASIRA_RETRIEVED` logs only a count, not user text.
+
+Source HTTP requests retry once on network TypeError or 502/503/504 within a shared 15-second timeout. They reject redirects and do not retry authentication or quota errors. MCP corpus-unavailable notices and failed document fetches still trigger fallback recovery or SYSTEM_ERROR; partial failures are never silently relabelled as insufficient evidence.
+
+An MCP corpus-unavailable notice is retried once. Only a subsequent response without that notice can count as a recovered search; if it persists, fallback recovery or SYSTEM_ERROR applies.
+
+QuranEnc's catalogue has no Arabic translation entries. For Arabic verse requests the adapter retrieves an available English translation edition with its source-provided Arabic original and explicitly labels the translation language in the evidence title. The source text, translation, footnotes and version remain unmodified; this does not claim to retrieve Arabic tafsir.
+
+For reproducible checks, see [eval/README.md](eval/README.md) and the dated [validation report](eval/validation-2026-10-06.md).
 
 ## Secrets and production boundary
 
