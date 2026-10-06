@@ -8,6 +8,7 @@ import { notes } from './gate';
 import { signSpeechReport, voiceRoute } from './voice';
 import { discussionRoute } from './discussion';
 import type { Env, Lang } from './types';
+import { isArabicText } from './types';
 export type { ClaimStatus, VerifyResponse } from './types';
 
 export function createWorker(dependencies?: Dependencies) {
@@ -28,8 +29,9 @@ export function createWorker(dependencies?: Dependencies) {
     try {
       let body: unknown;
       try { body = await request.json(); } catch { return Response.json({ error: 'INVALID_JSON' }, { status: 400 }); }
-      if (typeof body !== 'object' || body === null || !('text' in body) || typeof body.text !== 'string' || !body.text.trim() || body.text.length > 10000) return Response.json({ error: 'INVALID_TEXT', message: 'Provide non-empty text up to 10000 characters.' }, { status: 400 });
-      if ('lang' in body && body.lang !== 'ar' && body.lang !== 'en') return Response.json({ error: 'INVALID_LANG' }, { status: 400 });
+      if (typeof body !== 'object' || body === null || !('text' in body) || typeof body.text !== 'string' || !body.text.trim() || body.text.length > 10000) return Response.json({ error: 'INVALID_TEXT', message: 'أدخل نصاً غير فارغ لا يتجاوز ١٠٠٠٠ حرف.' }, { status: 400 });
+      if ('lang' in body && body.lang !== 'ar') return Response.json({ error: 'INVALID_LANG' }, { status: 400 });
+      if (!isArabicText(body.text)) return Response.json({ error: 'ARABIC_ONLY', message: 'تدعم بصيرة التحقق من النصوص العربية فقط. أدخل الادعاء بالعربية دون نص إنجليزي.' }, { status: 400 });
       text = body.text.trim(); lang = 'lang' in body ? body.lang as Lang : 'ar';
       const result = env.MOCK_MODE === 'true' ? mock(text) : await pipeline(text, lang, dependencies ?? { model: new Gemini(env), primary: new McpSource(), fallbacks: [new QuranEncSource(), new HadeethEncSource()] });
       let speechToken: string | undefined;

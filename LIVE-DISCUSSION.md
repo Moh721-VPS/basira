@@ -1,28 +1,17 @@
-# Live source discussion
+# المحادثة الصوتية العربية
 
-Basira's live discussion is a research companion, using publisher commentary retrieved from approved sources. It is separate from atomic claim verification and does not provide personal rulings.
+المحادثة المباشرة متاحة بالعربية عبر وكيل خاص في إليفن لابز وواجهة WebRTC. الميكروفون يبدأ بإذن المستخدم، مع كتم وإيقاف ونص المحادثة وبطاقات المصادر. الحد ثلاث دقائق للجلسة، وعشر جلسات يومياً، ومحادثة واحدة في الوقت نفسه، دون تفعيل زيادة الاستخدام المدفوعة.
 
-## Architecture
+يرحب المساعد بالمستخدم ويرد على التحية والشكر بعبارات عربية ثابتة. الأسئلة المعرفية تسترجع شرح الناشر من المصادر المعتمدة؛ يختار Gemini معرّف دليل فقط، ويقرأ الخادم النص الأصلي مع افتتاح وختام ودودين. لا يقرأ أسماء المصادر أو الروابط أو معرّفات الأدلة بصوت عالٍ؛ تظهر المراجع على الشاشة. الأحكام الشخصية تحال إلى مختص، والتعطل يعلن كفشل خدمة.
 
-- The official ElevenLabs browser SDK establishes a private WebRTC conversation after explicit microphone permission. Controls include stop, mute, transcript and citations. Client and provider session limits are three minutes.
-- ElevenLabs calls the protected `/api/agent/chat/completions` endpoint. This is a compatibility adapter, not a separate model answering from memory.
-- The backend uses recent user questions to retrieve approved-source records. It extracts original publisher commentary, then asks Gemini to return only a relevant evidence ID or an empty list. It never accepts generated religious prose or model-generated links. Retrieved quotations are shown with backend-mapped source URLs.
-- A `display_sources` client tool receives a backend-signed reply token and displays citations. The next model request validates that signed token and returns the exact backend-authored attribution plus source quotation. Client tool output cannot replace the spoken reply with a forged answer.
-- Personal/juristic requests refer before source/model calls. Empty evidence abstains; service failure stays SYSTEM_ERROR. Routing and relevance selection remain imperfect; no measured semantic accuracy is claimed.
-- The hosted agent is configured with custom-model fallback disabled. It has private session authentication, one concurrent session, three sessions per day, no bursting, no voice recording, and limited retention for new conversations. These controls are configured at agent creation, not assumed before creation succeeds.
+يحصل المتصفح على رمز جلسة مؤقت من `POST /api/discussion/session`. لا يرى مفتاح الخدمة. الوكيل يتصل بواجهة `/api/agent/chat/completions` المحمية بسر منفصل. عنوان النموذج المخصص في إعدادات إليفن لابز هو `https://basira.basira-api.workers.dev/api/agent`، إذ يضيف المزود مسار `/chat/completions` بنفسه.
 
-## Setup status — 2026-10-06
+يستقبل `display_sources` رد الخادم الموقّع. بعد الإقرار، يتحقق الخادم من التوقيع ويعيد الرد نفسه؛ لا يسمح لنتيجة الأداة باستبداله. نماذج الاحتياط معطلة، واللغة الافتراضية عربية، وإعدادات تجاوز اللغة غير مفعلة. تسجيل الصوت غير مفعّل، واحتفاظ المحادثة محدود بيوم واحد مع طلب حذف الصوت والنص.
 
-Basic ElevenLabs speech and transcription are validated and enabled. Arabic and English speech generation passed, English round-trip transcription matched a synthetic connection test, and the deployed signed-report endpoint returned Arabic audio.
+متغيرات الخادم: `ELEVENLABS_API_KEY`، `ELEVENLABS_AGENT_ID`، `BASIRA_AGENT_TOKEN`، `LIVE_AGENT_ENABLED=true`، ومتغيرات Gemini. تُخزن بيانات اتصال النموذج كسر في مساحة إليفن لابز. صلاحيات إنشاء وإدارة الوكيل مطلوبة للإعداد، وليس لمفتاح المتصفح.
 
-Live discussion implementation is ready, but hosted-agent creation is currently rejected by ElevenLabs because the key lacks `convai_write`. Enable ElevenAgents/Conversational AI Write and Read permissions in the existing API key. Do not paste the key into chat. The live session button remains unavailable until the private agent is created, validated and deployed.
+لإنشاء الوكيل أو تحديثه من الإعدادات المحلية: `pnpm --dir api exec node scripts/configure-agent.mjs`. يقرأ الملف المستبعد `api/.dev.vars` ويكتب معرّفات الوكيل والسر محلياً. بعدها أضف المتغيرات المطلوبة إلى أسرار الخادم وانشره. لا ينشر هذا الأمر مفاتيح الخدمة أو يطبعها.
 
-Backend variables: `BASIRA_AGENT_TOKEN` (private random secret), `ELEVENLABS_AGENT_ID`, `LIVE_AGENT_ENABLED=true`. The setup stores the custom-model credential in an ElevenLabs workspace secret; keys never enter browser code. Preserve the existing Gemini and voice variables.
+يبعث البث عبارة تقدم ثابتة ثم رسائل إبقاء اتصال صامتة. استرجاع المصدر الأساسي محدود بثماني ثوانٍ، والموصلات بعشرين ثانية، والنموذج بثلاثين ثانية للجولة. تجاوز المهلة فشل خدمة وليس حكماً على الادعاء.
 
-## Verification
-
-45 automated tests pass, including exact source quotation, ID-only selection, unknown/generated output rejection, abstention vs service failure, personal referral, signed quote integrity/expiry, private bridge authentication, source tool acknowledgement and session contracts. The production build/typecheck/dry-run passes.
-
-A real Arabic question about الإحسان selected original HadeethEnc commentary with its actual URL. Source-only tests do not measure general accuracy. Browser tests with an isolated mock SDK passed citation display, mute, stop, language unlock and mobile overflow; these were not real provider sessions. Actual WebRTC/agent behaviour remains to be validated after hosted-agent setup succeeds.
-
-References: [custom model integration](https://elevenlabs.io/docs/eleven-agents/customization/llm/custom-llm), [JavaScript SDK](https://elevenlabs.io/docs/eleven-agents/libraries/java-script), [API-key controls](https://elevenlabs.io/docs/overview/administration/workspaces/api-keys).
+نجح اختبار حقيقي لجلسة WebRTC مع سؤال عربي أُرسل عبر SDK وبطاقة مرجع من موسوعة الأحاديث النبوية. استخدم الاختبار ميكروفوناً اصطناعياً؛ جودة فهم كلام المستخدم الحقيقي تحتاج تجربة بشرية. الاختبارات الآلية لا تثبت دقة عامة.

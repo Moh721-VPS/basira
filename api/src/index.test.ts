@@ -19,9 +19,9 @@ test('health distinguishes mock, missing configuration, and real configuration w
   assert.equal((await worker.fetch(new Request(health, { method: 'POST' }))).status, 405);
 });
 test('valid input returns the mock contract and never claims support', async () => {
-  const response = await worker.fetch(request(JSON.stringify({ text: 'Example claim', lang: 'en' })), { MOCK_MODE: 'true' });
+  const response = await worker.fetch(request(JSON.stringify({ text: 'ادعاء تجريبي', lang: 'ar' })), { MOCK_MODE: 'true' });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { claims: [{ id: 'C1', text: 'Example claim', status: 'NEEDS_MORE_VERIFICATION', evidence: [{ id: 'E1', title: 'Mock evidence — example only', url: 'https://example.com/', snippet: 'Placeholder evidence. This does not support or refute the submitted text.' }], note: 'MOCK DATA: no verification was performed. بيانات تجريبية: لم يُجرَ أي تحقق.' }] });
+  assert.deepEqual(await response.json(), { claims: [{ id: 'C1', text: 'ادعاء تجريبي', status: 'NEEDS_MORE_VERIFICATION', evidence: [], note: 'بيانات تجريبية: لم يُجرَ أي تحقق.' }] });
 });
 test('rejects invalid JSON and text without returning claim judgments', async () => {
   for (const body of ['{', 'null', '{}', '{"text":" "}', JSON.stringify({ text: 'a'.repeat(10001) })]) {
@@ -36,6 +36,13 @@ test('routes and methods are explicit', async () => {
   assert.equal(response.status, 405);
   assert.equal(response.headers.get('Allow'), 'POST');
   assert.equal((await worker.fetch(new Request('https://basira.test/api/verify', { method: 'POST', body: 'text' }))).status, 415);
+});
+test('Arabic-only checking rejects English and mixed input before model access', async () => {
+  for (const body of [{ text: 'Prayer is a pillar of Islam.', lang: 'ar' }, { text: 'الصلاة pillar من أركان الإسلام', lang: 'ar' }, { text: 'الصلاة من أركان الإسلام', lang: 'en' }]) {
+    const response = await worker.fetch(request(JSON.stringify(body)), { MOCK_MODE: 'true' });
+    assert.equal(response.status, 400);
+    assert.equal(Object.hasOwn(await response.json() as object, 'claims'), false);
+  }
 });
 test('system failure is an HTTP error, never a claim status', async () => {
   const broken = request('{}');

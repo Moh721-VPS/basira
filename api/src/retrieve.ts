@@ -1,4 +1,5 @@
 import { string, type EvidenceSource, type IdentifiedEvidence, type Lang } from './types';
+import { isArabicText } from './types';
 const approvedHosts = new Set(['quranenc.com', 'hadeethenc.com', 'islamhouse.com', 'islamcontent.com']);
 export function approvedUrl(value: unknown): string {
   const url = string(value), parsed = new URL(url);
@@ -6,9 +7,10 @@ export function approvedUrl(value: unknown): string {
   return url;
 }
 export async function retrieve(claim: string, lang: Lang, primary: EvidenceSource, fallbacks: EvidenceSource[]): Promise<IdentifiedEvidence[]> {
-  let records;
+  let records, primaryFailed = false;
   try { records = await primary.search(claim, lang); }
   catch {
+    primaryFailed = true;
     console.warn('BASIRA_PRIMARY_FAILED');
     // Empty/failed fallbacks must never erase the original retrieval failure.
     const results = await Promise.allSettled(fallbacks.map(source => source.search(claim, lang)));
@@ -17,5 +19,7 @@ export async function retrieve(claim: string, lang: Lang, primary: EvidenceSourc
     if (!records.length) throw new Error('Retrieval unavailable');
   }
   const seen = new Set<string>();
-  return records.filter(record => { const url = approvedUrl(record.url); string(record.title); string(record.snippet); string(record.source); if (record.snippet.length > 40000) throw new Error('Evidence too large'); if (seen.has(url)) return false; seen.add(url); return true; }).slice(0, 5).map((record, index) => ({ ...record, id: `E${index + 1}` }));
+  const identified = records.filter(record => { const url = approvedUrl(record.url); string(record.title); string(record.snippet); string(record.source); if (record.snippet.length > 40000) throw new Error('Evidence too large'); if (!isArabicText(record.snippet) || !isArabicText(record.title)) return false; if (seen.has(url)) return false; seen.add(url); return true; }).slice(0, 5).map((record, index) => ({ ...record, id: `E${index + 1}` }));
+  if (primaryFailed && !identified.length) throw new Error('Arabic retrieval unavailable');
+  return identified;
 }

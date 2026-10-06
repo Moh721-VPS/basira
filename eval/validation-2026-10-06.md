@@ -1,3 +1,5 @@
+> سجل تاريخي قبل اعتماد العربية وحدها؛ لا يصف دعم اللغات الحالي. انظر README.md وvalidation-arabic-2026-10-06.md.
+
 # Validation — 2026-10-06
 
 These are developer-selected regression and service checks, not an independent benchmark, semantic accuracy estimate, or guarantee of uptime. The user confirmed the teammate's reviewed 40-claim set is not completed.

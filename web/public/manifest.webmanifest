@@ -1,6 +1,6 @@
 {
-  "id": "/", "name": "Basira | بصيرة", "short_name": "Basira",
-  "description": "Source-backed claim verification — IslamicAIch Track 04",
+  "id": "/", "name": "بصيرة", "short_name": "بصيرة",
+  "description": "التحقق من الادعاءات حول الإسلام بأدلة من المصادر",
   "start_url": "/", "scope": "/", "display": "standalone",
   "background_color": "#f8fafc", "theme_color": "#065f46",
   "lang": "ar", "dir": "rtl",

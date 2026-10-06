@@ -1,19 +1,14 @@
-# Evidence sources
+# مصادر بصيرة
 
-Live inspection on 2026-10-05 found that the MCP links some Quran results to `islamenc.com`, outside this project's approved citation hosts. For those QuranEnc records only, Basira uses the supplied numeric verse metadata to fetch new evidence from the approved QuranEnc API. It displays that API's own text and citation, not a relabelled MCP snippet. The allowlist is unchanged.
+تسترجع بصيرة نصوصاً عربية من موصل المحتوى الإسلامي، مع موصلات مباشرة لموسوعة القرآن الكريم وموسوعة الأحاديث النبوية عند تعطل المصدر الأساسي. العثور على نص لا يثبت دعمه للادعاء؛ يلزم فحص دلالته على الادعاء كاملاً.
 
-Basira allowlists QuranEnc, HadeethEnc, and IslamHouse through the association's read-only MCP server, with direct QuranEnc/HadeethEnc API fallbacks. Evidence links must use HTTPS on `quranenc.com`, `hadeethenc.com`, `islamhouse.com`, or the MCP library's actual citation host `islamcontent.com`. Retrieved content is shown with its publisher and source link; hadith grades are copied only from source responses.
+الروابط المقبولة HTTPS وعلى نطاقات `quranenc.com` و`hadeethenc.com` و`islamhouse.com` و`islamcontent.com`. النموذج يعيد معرّفات الأدلة فقط، والخادم يربطها بروابط حقيقية من نتائج الاسترجاع.
 
-On 2026-10-06, the live API catalogue returned no Arabic translation entries. Arabic verse requests now use an available English edition, preserving its returned Arabic original, English translation, footnotes and version. The citation title explicitly identifies the translation language. This does not retrieve or claim Arabic tafsir. See [the API's language-filter documentation](https://quranenc.com/en/home/api/).
+| المصدر | الاستخدام والحدود | المرجع |
+| --- | --- | --- |
+| موصل المحتوى الإسلامي | تهيئة ثم بحث ثم جلب؛ تُستبعد النتائج الإنجليزية. تُعرّب عناوين الحقول فقط دون تغيير نص الناشر. | [شروط الموصل](https://mcp.islamiccontent.org/terms.html) |
+| موسوعة القرآن الكريم | بحث مرجع آية صريح في الموصل المباشر؛ يعرض حقل النص العربي الأصلي فقط. تستخدم واجهة المزود فهرس طبعات الترجمات للوصول إلى الاستجابة، لكن ترجمة الطبعة وحواشيها لا تُعرض أو تدخل التحقق العربي. يُحفظ رابط الناشر والإصدار. لا ندعي استرجاع تفسير عربي عبر هذه الواجهة. | [واجهة البيانات وشروطها](https://quranenc.com/en/home/api/) |
+| موسوعة الأحاديث النبوية | بحث عبارة ثم جلب النص العربي والشرح والتخريج ودرجة الحديث كما وردت في المصدر. لا يولّد النموذج درجة الحديث. | [واجهة البيانات المنشورة](https://hadeethenc.com/HadeethEnc.com-API-v1.postman_collection_new.json) |
+| دار الإسلام ومكتبة المحتوى الإسلامي | بحث وجلب عبر الموصل مع روابط الناشرين؛ لا تنزيل جماعي أو إعادة استضافة للكتب. | [دار الإسلام](https://islamhouse.com) |
 
-| Source | URL | License/terms | How used |
-| --- | --- | --- | --- |
-| Mock evidence | https://example.com/ | Placeholder only; no source content copied | Fixed backend-authored URL and original placeholder snippet for demonstrating the response shape; not evidence for a claim |
-| Islamic Content MCP | https://mcp.islamiccontent.org/mcp | [Terms](https://mcp.islamiccontent.org/terms.html): free read-only access to published sources; no blanket relicensing of source works | Initialize, cross-source search, then fetch full source text; preserve returned citation URLs |
-| QuranEnc | https://quranenc.com | [API and terms](https://quranenc.com/en/home/api/): preserve content, attribution, version and transcript details; keep current; no inappropriate ads | MCP retrieval and explicit verse-reference API fallback; display complete returned Arabic text, translation and footnotes; fallback title includes translation/version |
-| HadeethEnc | https://hadeethenc.com | [Terms](https://hadeethenc.com/en/home), [published API collection](https://hadeethenc.com/HadeethEnc.com-API-v1.postman_collection_new.json): preserve content, publisher attribution and supplied version/transcript details; keep current; no inappropriate ads | MCP retrieval; public phrase-search/one API fallback; show original narration, source commentary, attribution and grade when supplied |
-| IslamHouse / Islamic Content library | https://islamhouse.com / https://islamcontent.com | MCP terms permit read-only access; individual works retain their own publisher/license terms | MCP search/fetch descriptions and citation links only; no downloads, rehosting, or model-generated summaries |
-
-No corpus is persisted or bulk downloaded. No retrieved source text is committed in test fixtures (fixtures are synthetic). Fields unsupported by an upstream response, including grades or versions, are never invented. Direct HadeethEnc responses currently omit version numbers; users can inspect the current publisher record through the citation. The MCP supplies formatted source text rather than a complete downloadable translation transcript; this app displays retrieved evidence, not republished books.
-
-Interface inspection on 2026-10-04: MCP `search` returns `{results:[{id,title,url}]}`; `fetch` returns document text, URL and metadata, in SSE/structuredContent. HadeethEnc exposes phrase search in its published Postman collection. QuranEnc has no documented full-text API search, so its fallback is restricted to explicit verse references. No IslamHouse API fallback is claimed. New sources require terms review and an explicit allowlist change.
+لا يخزن المشروع corpus أو ينزّل المحتوى جماعياً. تبقى حقوق المصادر لأصحابها، ولا تعني إتاحة الموصل منح ترخيص عام للمصنفات. أي حقل غير متوفر في المصدر لا يُختلق. واجهة القرآن لا توفر بحثاً نصياً عاماً، لذلك يقتصر موصلها المباشر على مراجع الآيات الصريحة.

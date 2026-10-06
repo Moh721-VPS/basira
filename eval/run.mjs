@@ -11,7 +11,7 @@ if (process.argv[4]) {
  cases = reviewed.claims;
  label = 'Exact-status and citation checks on a user-supplied reviewed set; semantic entailment still requires passage review';
 }
-if (!Array.isArray(cases) || !cases.length || new Set(cases.map(c => c.id)).size !== cases.length || cases.some(c => !c.id || typeof c.text !== 'string' || !c.text.trim() || !['ar','en'].includes(c.language) || !['SUPPORTED','NEEDS_MORE_VERIFICATION','REFER_TO_SPECIALIST'].includes(c.expected_status) || (c.expected_urls && (!Array.isArray(c.expected_urls) || c.expected_urls.some(u => typeof u !== 'string'))))) throw new Error('Invalid evaluation cases');
+if (!Array.isArray(cases) || !cases.length || new Set(cases.map(c => c.id)).size !== cases.length || cases.some(c => !c.id || typeof c.text !== 'string' || !c.text.trim() || c.language !== 'ar' || !['SUPPORTED','NEEDS_MORE_VERIFICATION','REFER_TO_SPECIALIST'].includes(c.expected_status) || (c.expected_urls && (!Array.isArray(c.expected_urls) || c.expected_urls.some(u => typeof u !== 'string'))))) throw new Error('Invalid evaluation cases');
 const health = await fetch(new URL('/api/health', base), { signal: AbortSignal.timeout(15000) }).then(r => r.json());
 if (health.mode !== 'real' || !health.configured) throw new Error('Refusing to evaluate mock or unconfigured service');
 const statuses = ['SUPPORTED', 'NEEDS_MORE_VERIFICATION', 'REFER_TO_SPECIALIST', 'SYSTEM_ERROR'];

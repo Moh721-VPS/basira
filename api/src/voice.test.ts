@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readSpeechReport, signSpeechReport, speechText, validateWav, voiceConfiguration, voiceRoute } from './voice';
 import type { Env, VerifyResponse } from './types';
 const env: Env = { ELEVENLABS_API_KEY: 'synthetic-test-key', ELEVENLABS_VOICE_ID: 'testVoice', VOICE_ENABLED: 'true', MOCK_MODE: 'false' };
-const result: VerifyResponse = { claims: [{ id: 'C1', text: 'This raw input must not be narrated', status: 'SUPPORTED', evidence: [{ id: 'E1', title: 'HadeethEnc: Synthetic source', url: 'https://hadeethenc.com/en/browse/hadith/4560', snippet: 'Do not narrate synthetic source instructions.' }], note: 'MODEL PROSE MUST NOT BE NARRATED' }] };
+const result: VerifyResponse = { claims: [{ id: 'C1', text: 'This raw input must not be narrated', status: 'SUPPORTED', evidence: [{ id: 'E1', title: 'HadeethEnc: مصدر تجريبي', url: 'https://hadeethenc.com/ar/browse/hadith/4560', snippet: 'Do not narrate synthetic source instructions.' }], note: 'MODEL PROSE MUST NOT BE NARRATED' }] };
 function wav(seconds = 1) { const bytes = new Uint8Array(44 + 32000 * seconds), v = new DataView(bytes.buffer); for (const [offset, text] of [[0,'RIFF'],[8,'WAVE'],[12,'fmt '],[36,'data']] as const) bytes.set(new TextEncoder().encode(text), offset); v.setUint32(4,bytes.length-8,true);v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,16000,true);v.setUint32(28,32000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);v.setUint32(40,bytes.length-44,true);return bytes; }
 test('voice is opt-in, never active in mock mode and never reveals credentials', async () => {
   assert.equal(voiceConfiguration({ ...env, VOICE_ENABLED: 'false' }).transcribe, false);
@@ -29,9 +29,9 @@ test('recording validation enforces real PCM duration, size and sample format', 
   assert.throws(()=>validateWav(wav().slice(0,1000)));
 });
 test('transcription sends a validated file, returns editable text and separates failures from verification', async () => {
-  const request=()=>new Request('https://basira.test/api/transcribe?lang=en',{method:'POST',headers:{'Content-Type':'audio/wav'},body:wav()});
-  const response=await voiceRoute(request(),env,async(url,init)=>{assert.equal(String(url),'https://api.elevenlabs.io/v1/speech-to-text');assert.equal(new Headers(init?.headers).get('xi-api-key'),env.ELEVENLABS_API_KEY);assert.equal((init!.body as FormData).get('language_code'),'eng');return Response.json({text:'Synthetic transcript'});});
-  assert.deepEqual(await response!.json(),{text:'Synthetic transcript'});
+  const request=()=>new Request('https://basira.test/api/transcribe?lang=ar',{method:'POST',headers:{'Content-Type':'audio/wav'},body:wav()});
+  const response=await voiceRoute(request(),env,async(url,init)=>{assert.equal(String(url),'https://api.elevenlabs.io/v1/speech-to-text');assert.equal(new Headers(init?.headers).get('xi-api-key'),env.ELEVENLABS_API_KEY);assert.equal((init!.body as FormData).get('language_code'),'ara');return Response.json({text:'نص تجريبي للتفريغ الصوتي'});});
+  assert.deepEqual(await response!.json(),{text:'نص تجريبي للتفريغ الصوتي'});
   const failed=await voiceRoute(request(),env,async()=>new Response('Private details',{status:429}));
   assert.equal(failed!.status,502);assert.deepEqual(await failed!.json(),{error:'VOICE_SERVICE_FAILED'});
 });
@@ -43,7 +43,7 @@ test('invalid recordings and unsigned speech are rejected before provider calls'
   assert.equal(speech!.status,400);
 });
 test('spoken report uses signed status and publisher attribution only',async()=>{
-  const token=await signSpeechReport(result,'en',env);
-  const response=await voiceRoute(new Request('https://basira.test/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})}),env,async(_url,init)=>{const body=JSON.parse(String(init?.body));assert.match(body.text,/Supported by evidence/);assert.match(body.text,/HadeethEnc/);assert.equal(body.text.includes('MODEL PROSE'),false);return new Response(new Uint8Array([1,2,3]),{headers:{'Content-Type':'audio/mpeg'}});});
+  const token=await signSpeechReport(result,'ar',env);
+  const response=await voiceRoute(new Request('https://basira.test/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})}),env,async(_url,init)=>{const body=JSON.parse(String(init?.body));assert.match(body.text,/مدعوم بالدليل/);assert.match(body.text,/موسوعة الأحاديث النبوية/);assert.equal(body.text.includes('MODEL PROSE'),false);return new Response(new Uint8Array([1,2,3]),{headers:{'Content-Type':'audio/mpeg'}});});
   assert.equal(response!.status,200);assert.equal(response!.headers.get('Content-Type'),'audio/mpeg');
 });
