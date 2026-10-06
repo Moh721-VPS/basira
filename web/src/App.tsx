@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import VoiceInput from './VoiceInput';
 import ReportAudio from './ReportAudio';
+import LiveDiscussion from './LiveDiscussion';
 
 type Status = 'SUPPORTED' | 'NEEDS_MORE_VERIFICATION' | 'REFER_TO_SPECIALIST' | 'SYSTEM_ERROR';
 type Claim = { id: string; text: string; status: Status; evidence: { id: string; title: string; url: string; snippet: string }[]; note: string; retrieval?: { count: number; sources: string[] } };
@@ -28,6 +29,7 @@ export default function App() {
   const [voiceAvailable, setVoiceAvailable] = useState(false);
   const [transcriptReview, setTranscriptReview] = useState(false);
   const [speechToken, setSpeechToken] = useState<string | undefined>();
+  const [view, setView] = useState<'verify' | 'discussion'>('verify');
   const controller = useRef<AbortController | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const t = copy[language];
@@ -63,6 +65,8 @@ export default function App() {
       <a href="#" className="brand">{t.title}</a>
       <button disabled={busy || voiceBusy} type="button" className="button secondary" onClick={() => { setLanguage(language === 'ar' ? 'en' : 'ar'); setSpeechToken(undefined); setNotice(''); }} lang={language === 'ar' ? 'en' : 'ar'}>{language === 'ar' ? 'English' : 'العربية'}</button>
     </header>
+    <nav className="app-tabs" aria-label={language === 'ar' ? 'أقسام بصيرة' : 'Basira sections'}><button type="button" className={`button ${view === 'verify' ? 'primary' : 'secondary'}`} disabled={busy || voiceBusy} aria-pressed={view === 'verify'} onClick={() => setView('verify')}>{language === 'ar' ? 'تحقق من نص' : 'Verification'}</button><button type="button" className={`button ${view === 'discussion' ? 'primary' : 'secondary'}`} disabled={busy || voiceBusy} aria-pressed={view === 'discussion'} onClick={() => setView('discussion')}>{language === 'ar' ? 'محادثة مباشرة' : 'Live discussion'}</button></nav>
+    {view === 'discussion' ? <LiveDiscussion language={language} onBusyChange={setVoiceBusy} /> : <>
     <section className="hero"><p className="eyebrow">{language === 'ar' ? 'المعرفة تبدأ بالدليل' : 'KNOWLEDGE STARTS WITH EVIDENCE'}</p><h1>{language === 'ar' ? <>كل ادعاء،<br />بصيرة أوضح.</> : <>Every claim.<br />A clearer view.</>}</h1><p>{language === 'ar' ? 'اكتب أو تحدث. راجع النتيجة ومصدرها قبل أن تشاركها.' : 'Type or speak. Review the result and its source before sharing.'}</p></section>
     <div className="workspace"><div>
     <form onSubmit={verify} className="panel composer">
@@ -90,6 +94,7 @@ export default function App() {
       </li>)}</ul></>}
     </section>
     </div><aside><section className="panel how"><p className="eyebrow">01 / {t.title}</p><h2>{language === 'ar' ? <>الدليل في قلب<br />كل نتيجة</> : <>Evidence at the heart<br />of every result</>}</h2><p className="method-copy">{language === 'ar' ? 'نقسم النص إلى ادعاءات، ونسترجع المصادر، ثم نفحص دلالة كل دليل.' : 'We split text into claims, retrieve sources, and check what the evidence directly supports.'}</p><div className="source-tags"><a href="https://quranenc.com" target="_blank" rel="noreferrer">QuranEnc ↗</a><a href="https://hadeethenc.com" target="_blank" rel="noreferrer">HadeethEnc ↗</a><span>Islamic Content MCP</span></div><p className="boundary">{t.demo}</p></section></aside></div>
+    </>}
     <footer><span>{t.title} · IslamicAIch 2026</span><p>{x.privacy}</p></footer>
   </main>;
 }

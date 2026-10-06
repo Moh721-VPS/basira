@@ -1,6 +1,6 @@
 # Basira design and voice brief
 
-Requested on 2026-10-06: involve Figma in improving the interface, and ElevenLabs in both voice input and spoken verification reports. Editable Figma screens, the React implementation and voice API adapters are implemented. Real ElevenLabs access is not configured or tested yet, so production voice remains disabled.
+Requested on 2026-10-06: involve Figma in improving the interface, and ElevenLabs in both voice input and spoken verification reports. Editable Figma screens, the React implementation and voice API adapters are implemented. Basic voice is enabled after limited real-service checks; the additional live discussion agent is pending provider Write permission. See VOICE.md and LIVE-DISCUSSION.md.
 
 Figma file: https://www.figma.com/design/JPT2ECVyHsTo7q4MfiwM35
 

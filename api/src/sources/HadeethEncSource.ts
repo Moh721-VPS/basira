@@ -17,7 +17,7 @@ export class HadeethEncSource implements EvidenceSource {
       if (String(result.id) !== id) throw new Error('Mismatched hadith');
       // Copy grading verbatim only when supplied by the source.
       const snippet = [string(result.hadeeth), typeof result.grade === 'string' && result.grade ? `Grade: ${result.grade}` : '', typeof result.attribution === 'string' ? result.attribution : '', typeof result.explanation === 'string' ? result.explanation : ''].filter(Boolean).join('\n\n');
-      return { source: 'HadeethEnc', title: string(result.title), url: `https://hadeethenc.com/${lang}/browse/hadith/${id}`, snippet };
+      return { source: 'HadeethEnc', title: string(result.title), url: `https://hadeethenc.com/${lang}/browse/hadith/${id}`, snippet, commentary: typeof result.explanation === 'string' ? [result.explanation] : [] };
     }));
   }
 }

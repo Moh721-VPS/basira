@@ -2,7 +2,7 @@
 
 ## Current state
 
-The interface and backend adapters are implemented. Production voice is off until ElevenLabs credentials and `VOICE_ENABLED=true` are configured and real-service checks pass. Text verification remains available. Configuration readiness is not proof that a key, quota, model, voice or upstream service works.
+The interface and backend adapters are implemented. Basic voice is enabled after real Arabic/English speech-generation and English transcription checks passed on 2026-10-06. The deployed signed-report endpoint also returned Arabic audio for a specialist-referral result. Text verification remains available. Configuration readiness is not proof that quota or upstream services will keep working. Live conversational-agent status is documented separately in [LIVE-DISCUSSION.md](LIVE-DISCUSSION.md).
 
 Editable design: [Basira verification and voice](https://www.figma.com/design/JPT2ECVyHsTo7q4MfiwM35). The implementation adapts the design's Noto Sans Arabic/Manrope typography, product tokens and reusable controls to the existing React/Vite app. Fonts are hosted locally with their OFL licences. Existing examples, result filters, evidence inspection and report export remain available.
 
@@ -48,6 +48,6 @@ Voice endpoint errors are HTTP errors such as `VOICE_NOT_CONFIGURED`, `INVALID_R
 
 39 automated tests pass, including signed narration integrity/expiry, PCM duration/format limits, no-key/mock-mode opt-out, transcription contracts, provider errors and no arbitrary-text narration. Browser checks exercised actual recording and WAV conversion with a fake test microphone, mocked voice responses, editable transcript review, microphone release, discard-without-upload, no auto-verification, playback/error wiring, cache reuse, RTL/LTR, loaded local fonts and mobile overflow. A real local personal-ruling request still returned REFER_TO_SPECIALIST.
 
-Live ElevenLabs transcription, Arabic pronunciation, provider quota behaviour and a real selected voice remain untested until the account is configured.
+Default voice George was selected from the available account voices. English round-trip transcription matched the synthetic connection test. Arabic speech was generated successfully, but Arabic pronunciation quality and speech-recognition accuracy need human evaluation. Provider quota behaviour and general transcription accuracy are not established by these limited checks.
 
 References: [speech-to-text API](https://elevenlabs.io/docs/api-reference/speech-to-text/convert), [text-to-speech API](https://elevenlabs.io/docs/api-reference/text-to-speech/convert).

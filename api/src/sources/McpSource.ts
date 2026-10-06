@@ -52,7 +52,8 @@ export class McpSource implements EvidenceSource {
         if (evidence.length !== 1) throw new Error('Approved Quran evidence unavailable');
         return evidence[0];
       }
-      return { title: string(doc.title), url: approvedUrl(doc.url), snippet: string(doc.text), source };
+      const commentary = Array.isArray(doc.segments) ? doc.segments.map(object).filter(segment => segment.kind === 'commentary' && typeof segment.text === 'string' && segment.text.length <= 40000).map(segment => String(segment.text)) : [];
+      return { title: string(doc.title), url: approvedUrl(doc.url), snippet: string(doc.text), source, commentary };
     }));
   }
 }

@@ -6,11 +6,13 @@ import { pipeline, type Dependencies } from './pipeline';
 import { mock } from './mock';
 import { notes } from './gate';
 import { signSpeechReport, voiceRoute } from './voice';
+import { discussionRoute } from './discussion';
 import type { Env, Lang } from './types';
 export type { ClaimStatus, VerifyResponse } from './types';
 
 export function createWorker(dependencies?: Dependencies) {
   return { async fetch(request: Request, env: Env = {}): Promise<Response> {
+    const discussion = await discussionRoute(request, env, dependencies); if (discussion) return discussion;
     const voice = await voiceRoute(request, env); if (voice) return voice;
     if (new URL(request.url).pathname === '/api/health') {
       if (request.method !== 'GET') return Response.json({ error: 'METHOD_NOT_ALLOWED' }, { status: 405, headers: { Allow: 'GET' } });
